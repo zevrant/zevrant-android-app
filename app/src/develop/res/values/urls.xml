@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_base_url">https://develop.zevrant-services.com/zevrant-backup-service</string>
+    <string name="oauth_base_url">https://develop.zevrant-services.com/zevrant-oauth2-service</string>
+</resources>
