@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Zevrant Services</string>
+    <string name="title_activity_main">Zevrant Services</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="login">Login</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+</resources>
