@@ -32,6 +32,7 @@ android {
                 // keystore file in the same directory as the build.gradle file.
                 storeFile file(System.getenv("SIGNING_KEYSTORE"))
                 storePassword System.getenv("KEYSOTRE_PASSWORD")
+                keyPassword ""
                 keyAlias "1"
             }
         }
