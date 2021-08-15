@@ -1,4 +1,4 @@
-package com.zevrant.services.zevrantandroidapp.volley.requests;
+package com.zevrant.services.zevrantandroidapp.pojo;
 
 import com.zevrant.services.zevrantandroidapp.pojo.FileInfo;
 
