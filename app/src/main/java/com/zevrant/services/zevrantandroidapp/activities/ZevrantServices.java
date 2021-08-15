@@ -26,6 +26,7 @@ import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.services.RequestQueueService;
+import com.zevrant.services.zevrantandroidapp.services.UpdateService;
 import com.zevrant.services.zevrantandroidapp.services.android.MainService;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -62,7 +63,7 @@ public class ZevrantServices extends Activity implements Observer {
                 if(credential.getId() == null) {
                     logger.error("LIES!!!! google smartlock responded success but does not have credentials");
                 }
-                startBackupService(credential.getId(), credential.getPassword());
+                startServices(credential.getId(), credential.getPassword());
             } else {
                 logger.info("failed to retrieve login credentials");
 
@@ -94,12 +95,13 @@ public class ZevrantServices extends Activity implements Observer {
             OAuthService.init(getApplicationContext());
             BackupService.init(getApplicationContext());
             CredentialsService.init();
+            UpdateService.init(getApplicationContext());
         } catch (IOException ex) {
             logger.error(ex.getMessage() + ExceptionUtils.getStackTrace(ex));
         }
     }
 
-    private void startBackupService(String username, String password) {
+    private void startServices(String username, String password) {
         Intent serviceIntent = new Intent(this, MainService.class);
         serviceIntent.putExtra("username", username);
         serviceIntent.putExtra("password", password);
@@ -147,7 +149,7 @@ public class ZevrantServices extends Activity implements Observer {
     public void update(Observable o, Object arg) {
         if(o instanceof CredentialWrapper) {
             Credential credential = ((CredentialWrapper) o).getCredential();
-            startBackupService(credential.getId(), credential.getPassword());
+            startServices(credential.getId(), credential.getPassword());
         } else {
             logger.info("Observable not instance of Credential Wrapper");
         }

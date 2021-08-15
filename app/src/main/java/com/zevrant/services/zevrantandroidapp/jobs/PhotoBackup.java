@@ -17,7 +17,7 @@ import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
-import com.zevrant.services.zevrantandroidapp.volley.requests.BackupFileRequest;
+import com.zevrant.services.zevrantandroidapp.pojo.BackupFileRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,18 +1,26 @@
 package com.zevrant.services.zevrantandroidapp.runnables;
 
+import static android.app.AppOpsManager.MODE_ALLOWED;
+import static android.app.AppOpsManager.OPSTR_GET_USAGE_STATS;
+
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import androidx.work.*;
+
+import androidx.work.Constraints;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
+import com.zevrant.services.zevrantandroidapp.jobs.UpdateJob;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
-
-import static android.app.AppOpsManager.MODE_ALLOWED;
-import static android.app.AppOpsManager.OPSTR_GET_USAGE_STATS;
 
 public class BackupJobScheduler implements Runnable {
 
@@ -45,18 +53,25 @@ public class BackupJobScheduler implements Runnable {
                 .build();
 //        while (!Thread.interrupted()) {
 
-            Constraints constraints = new Constraints.Builder()
-                    .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
-                    .build();
+        Constraints constraints = new Constraints.Builder()
+                .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
+                .build();
 
-            WorkRequest request = new OneTimeWorkRequest.Builder(PhotoBackup.class)
-                    .setConstraints(constraints)
-                    .setInputData(data)
-                    .build();
+//        WorkRequest request = new OneTimeWorkRequest.Builder(PhotoBackup.class)
+//                .setConstraints(constraints)
+//                .setInputData(data)
+//                .build();
 
-            WorkManager.getInstance(context)
-                    .enqueue(request);
+        WorkRequest updateRequest = new OneTimeWorkRequest.Builder(UpdateJob.class)
+                .setConstraints(constraints)
+                .setInputData(data)
+                .build();
 
+//        WorkManager.getInstance(context)
+//                .enqueue(request);
+
+        WorkManager.getInstance(context)
+                .enqueue(updateRequest);
 //            try {
 //                Thread.sleep(5000);
 //            } catch (InterruptedException e) {

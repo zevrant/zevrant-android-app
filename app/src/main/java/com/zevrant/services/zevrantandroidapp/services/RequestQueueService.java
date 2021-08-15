@@ -9,6 +9,7 @@ import com.android.volley.toolbox.DiskBasedCache;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
+import com.zevrant.services.zevrantandroidapp.volley.requests.InputStreamRequest;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +38,10 @@ public class RequestQueueService {
     }
 
     public static void addToQueue(StringRequest request) {
+        requestQueue.add(request);
+    }
+
+    public static void addToQueue(InputStreamRequest request) {
         requestQueue.add(request);
     }
 }

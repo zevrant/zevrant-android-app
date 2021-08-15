@@ -4,6 +4,12 @@ plugins {
 
 boolean hasSigningInfo = System.getenv("SIGNING_KEYSTORE") != null && System.getenv("KEYSOTRE_PASSWORD");
 
+String version = "0.0.0"
+
+if(project.hasProperty('projVersion')) {
+    version = project.projVersion
+}
+
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
@@ -13,7 +19,7 @@ android {
         minSdkVersion 30
         targetSdkVersion 30
         versionCode 1
-        versionName "1.0"
+        versionName version
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -87,7 +93,7 @@ dependencies {
     implementation 'androidx.work:work-runtime:2.6.0-rc01'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.android.volley:volley:1.2.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.4'
+    implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.4') { transitive = true }
     implementation 'com.google.android.gms:play-services-auth:19.2.0'
     implementation "androidx.navigation:navigation-fragment:$nav_version"
     implementation "androidx.navigation:navigation-ui:$nav_version"
