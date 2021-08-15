@@ -2,4 +2,6 @@
 <resources>
     <string name="backup_base_url">https://192.168.1.21:8080/zevrant-backup-service</string>
     <string name="oauth_base_url">https://192.168.1.21:8080/zevrant-oauth2-service</string>
+    <string name="s3BucketLocation">zevrant-apk-store</string>
+    <string name="artifactFolder">local</string>
 </resources>
