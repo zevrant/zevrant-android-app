@@ -1,6 +1,7 @@
 package com.zevrant.services.zevrantandroidapp.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
 import android.widget.Button;
@@ -63,30 +64,31 @@ public class LoginFormActivity extends Activity {
                             if (task.isSuccessful()) {
                                 logger.info("Credentials Successfully Saved ");
                                 CredentialsService.setCredential(credential);
-                            }
+                                Intent intent = new Intent(this, ZevrantServices.class);
+                                startActivity(intent);
+                            } else {
+                                Exception e = task.getException();
+                                if (e instanceof ResolvableApiException) {
+                                    // Try to resolve the save request. This will prompt the user if
+                                    // the credential is new.
+                                    ResolvableApiException rae = (ResolvableApiException) e;
+                                    try {
+                                        rae.startResolutionForResult(this, 0); //TODO not sure what the int here signifies, supposed to use the constant RC_SAVE idk where that comes from
+                                        CredentialsService.setCredential(credential);
+                                    } catch (IntentSender.SendIntentException exception) {
+                                        // Could not resolve the request
+                                        logger.error("Failed to send resolution.", exception);
+                                        Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
+                                    }
+                                } else if (e != null) {
+                                    // Request has no resolution
 
-                            Exception e = task.getException();
-
-                            if (e instanceof ResolvableApiException) {
-                                // Try to resolve the save request. This will prompt the user if
-                                // the credential is new.
-                                ResolvableApiException rae = (ResolvableApiException) e;
-                                try {
-                                    rae.startResolutionForResult(this, 0); //TODO not sure what the int here signifies, supposed to use the constant RC_SAVE idk where that comes from
-                                    CredentialsService.setCredential(credential);
-                                } catch (IntentSender.SendIntentException exception) {
-                                    // Could not resolve the request
-                                    logger.error("Failed to send resolution.", exception);
+                                    logger.error(ExceptionUtils.getStackTrace(e));
+                                    Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    logger.error("Login Task threw an exception but no exception could be retrieved");
                                     Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
                                 }
-                            } else if(e != null){
-                                // Request has no resolution
-
-                                logger.error(ExceptionUtils.getStackTrace(e));
-                                Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
-                            } else {
-                                logger.error("Login Task threw an exception but no exception could be retrieved");
-                                Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
                             }
                         });
 
