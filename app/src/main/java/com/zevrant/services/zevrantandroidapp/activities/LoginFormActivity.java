@@ -19,6 +19,7 @@ import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 
+import org.acra.ACRA;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -75,6 +76,7 @@ public class LoginFormActivity extends Activity {
                                     rae.startResolutionForResult(this, 0); //TODO not sure what the int here signifies, supposed to use the constant RC_SAVE idk where that comes from
                                     CredentialsService.setCredential(credential);
                                 } catch (IntentSender.SendIntentException exception) {
+                                    ACRA.getErrorReporter().handleSilentException(e);
                                     // Could not resolve the request
                                     logger.error("Failed to send resolution.", exception);
                                     Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
@@ -92,6 +94,8 @@ public class LoginFormActivity extends Activity {
 
                     } catch (Exception ex) {
                         logger.error(ExceptionUtils.getStackTrace(ex));
+                        ACRA.getErrorReporter().handleSilentException(ex);
+
                     }
                 }
             });

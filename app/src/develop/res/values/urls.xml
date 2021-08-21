@@ -4,4 +4,7 @@
     <string name="oauth_base_url">https://develop.zevrant-services.com/zevrant-oauth2-service</string>
     <string name="s3BucketLocation">zevrant-apk-store</string>
     <string name="artifactFolder">develop</string>
+    <string name="testUpdate">true</string>
+    <string name="reportsUsername">ztL8IeRqLNL7myRb</string>
+    <string name="reportsPassword">xtOHOOueeHOl5uNn</string>
 </resources>

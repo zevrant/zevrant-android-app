@@ -3,6 +3,7 @@ package com.zevrant.services.zevrantandroidapp.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.acra.ACRA;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ public class JsonParser {
             return objectMapper.readValue(jsonString, clazz);
         } catch(JsonProcessingException ex) {
             logger.error("Failed Processing json string into class {}, {} \n {}", clazz, ExceptionUtils.getStackTrace(ex), jsonString);
+            ACRA.getErrorReporter().handleSilentException(ex);
         }
         return null;
     }
@@ -26,6 +28,7 @@ public class JsonParser {
             return objectMapper.writeValueAsString(object);
         } catch(JsonProcessingException ex) {
             logger.error("Failed Processing json class {} into string, {}", object.getClass(), ExceptionUtils.getStackTrace(ex));
+            ACRA.getErrorReporter().handleSilentException(ex);
         }
         return null;
     }

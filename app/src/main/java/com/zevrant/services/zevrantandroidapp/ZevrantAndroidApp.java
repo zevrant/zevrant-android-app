@@ -3,17 +3,24 @@ package com.zevrant.services.zevrantandroidapp;
 import android.app.Application;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
 
 import com.zevrant.service.zevrantandroidapp.NukeSSLCerts;
-import com.zevrant.services.zevrantandroidapp.services.RequestQueueService;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import org.acra.ACRA;
+import org.acra.annotation.AcraCore;
+import org.acra.annotation.AcraHttpSender;
+import org.acra.config.CoreConfigurationBuilder;
+import org.acra.config.HttpSenderConfigurationBuilder;
+import org.acra.data.StringFormat;
+import org.acra.sender.HttpSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@AcraCore(buildConfigClass = BuildConfig.class)
 public class ZevrantAndroidApp extends Application {
     private static final Logger logger = LoggerFactory.getLogger(ZevrantAndroidApp.class);
     public static final String CHANNEL_ID = "test";
@@ -21,9 +28,23 @@ public class ZevrantAndroidApp extends Application {
 
     private static final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
-    public ZevrantAndroidApp() throws Exception {
-//        ZevrantIOC.run(ZevrantAndroidApp.class);
-        logger.info("CREATED");
+    public ZevrantAndroidApp() {
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        CoreConfigurationBuilder builder = new CoreConfigurationBuilder(this);
+        builder
+                .setReportFormat(StringFormat.JSON)
+                .getPluginConfigurationBuilder(HttpSenderConfigurationBuilder.class)
+                .setBasicAuthLogin(base.getString(R.string.reportsUsername))
+                .setBasicAuthPassword(base.getString(R.string.reportsPassword))
+                .setHttpMethod(HttpSender.Method.POST)
+                .setUri("https://develop.acrarium.zevrant-services.com/report")
+                .setEnabled(true);
+        // The following line triggers the initialization of ACRA
+        ACRA.init(this, builder);
     }
 
     @Override

@@ -11,12 +11,16 @@ import android.os.Looper;
 import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.Operation;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.zevrant.services.zevrantandroidapp.BuildConfig;
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
 import com.zevrant.services.zevrantandroidapp.jobs.UpdateJob;
 
+import org.acra.ACRA;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +31,8 @@ public class BackupJobScheduler implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(BackupJobScheduler.class);
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
-
+    private static final String BACKUP_TAG = "BACKUP";
+    private static final String UPDATE_TAG = "UPDATE";
 
     private final Context context;
     private String username;
@@ -51,32 +56,49 @@ public class BackupJobScheduler implements Runnable {
                 .putString("username", username)
                 .putString("password", password)
                 .build();
-//        while (!Thread.interrupted()) {
+        while (!Thread.interrupted()) {
 
-        Constraints constraints = new Constraints.Builder()
-                .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
-                .build();
+            Constraints constraints = new Constraints.Builder()
+                    .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
+                    .build();
 
-//        WorkRequest request = new OneTimeWorkRequest.Builder(PhotoBackup.class)
-//                .setConstraints(constraints)
-//                .setInputData(data)
-//                .build();
+            WorkManager workManager = WorkManager.getInstance(context);
 
-        WorkRequest updateRequest = new OneTimeWorkRequest.Builder(UpdateJob.class)
-                .setConstraints(constraints)
-                .setInputData(data)
-                .build();
+            workManager.cancelAllWorkByTag(BACKUP_TAG);
+            workManager.cancelAllWorkByTag(UPDATE_TAG);
 
-//        WorkManager.getInstance(context)
-//                .enqueue(request);
+            WorkRequest request = new OneTimeWorkRequest.Builder(PhotoBackup.class)
+                    .addTag(BACKUP_TAG)
+                    .setConstraints(constraints)
+                    .setInputData(data)
+                    .build();
 
-        WorkManager.getInstance(context)
-                .enqueue(updateRequest);
-//            try {
-//                Thread.sleep(5000);
-//            } catch (InterruptedException e) {
-//                logger.info("Schedule running apps job thread has been interrupted shutting down");
-//            }
-//        }
+            WorkRequest updateRequest = new OneTimeWorkRequest.Builder(UpdateJob.class)
+                    .addTag(UPDATE_TAG)
+                    .setConstraints(constraints)
+                    .setInputData(data)
+                    .build();
+
+            ListenableFuture<Operation.State.SUCCESS> results = workManager.enqueue(updateRequest).getResult();
+
+            results.addListener(() -> {
+                workManager.enqueue(request);
+            }, Runnable::run);
+
+            logger.info("Build Type is {}, should upload all? {}", BuildConfig.BUILD_TYPE, BuildConfig.BUILD_TYPE.equals("release"));
+            logger.info("Sleeping for {}", 3.6 * Math.pow(10, 6));
+            if (!BuildConfig.BUILD_TYPE.equals("release")) {
+                break;
+            }
+
+            try {
+
+                Thread.sleep((int) Math.floor(3.6 * Math.pow(10, 6)));
+            } catch (InterruptedException e) {
+                ACRA.getErrorReporter().handleSilentException(e);
+                logger.info("Schedule running apps job thread has been interrupted shutting down");
+            }
+
+        }
     }
 }

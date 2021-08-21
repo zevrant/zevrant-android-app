@@ -4,6 +4,12 @@ buildscript {
         mavenLocal()
         google()
         mavenCentral()
+        maven {
+            url "s3://zevrant-artifact-store"
+            authentication {
+                awsIm(AwsImAuthentication)
+            }
+        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:7.0.0'
@@ -18,6 +24,12 @@ allprojects {
         mavenLocal()
         google()
         mavenCentral()
+        maven {
+            url "s3://zevrant-artifact-store"
+            authentication {
+                awsIm(AwsImAuthentication)
+            }
+        }
     }
 }
 

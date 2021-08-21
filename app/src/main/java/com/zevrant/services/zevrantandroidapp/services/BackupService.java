@@ -4,6 +4,8 @@ import android.content.Context;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
+import com.android.volley.RetryPolicy;
+import com.android.volley.VolleyError;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
 import com.zevrant.services.zevrantandroidapp.pojo.OAuthToken;
@@ -38,6 +40,22 @@ public class BackupService {
                 JsonParser.writeValueAsString(backupFileRequest),
                 responseCallback,
                 DefaultRequestHandlers.errorListener);
+        request.setRetryPolicy(new RetryPolicy() {
+            @Override
+            public int getCurrentTimeout() {
+                return 500000;
+            }
+
+            @Override
+            public int getCurrentRetryCount() {
+                return 500000;
+            }
+
+            @Override
+            public void retry(VolleyError error) throws VolleyError {
+
+            }
+        });
         request.setOAuthToken(oAuthToken.getAccessToken());
         RequestQueueService.addToQueue(request);
     }

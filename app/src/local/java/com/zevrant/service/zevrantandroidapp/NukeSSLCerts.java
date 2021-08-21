@@ -1,5 +1,7 @@
 package com.zevrant.service.zevrantandroidapp;
 
+import org.acra.ACRA;
+
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
@@ -39,7 +41,9 @@ public class NukeSSLCerts {
                     return true;
                 }
             });
+
         } catch (Exception e) {
+            ACRA.getErrorReporter().handleSilentException(e);
         }
     }
 }

@@ -29,6 +29,7 @@ import com.zevrant.services.zevrantandroidapp.services.RequestQueueService;
 import com.zevrant.services.zevrantandroidapp.services.UpdateService;
 import com.zevrant.services.zevrantandroidapp.services.android.MainService;
 
+import org.acra.ACRA;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,9 @@ public class ZevrantServices extends Activity implements Observer {
                 Credential credential = task.getResult().getCredential();
                 if(credential.getId() == null) {
                     logger.error("LIES!!!! google smartlock responded success but does not have credentials");
+                    ACRA.getErrorReporter().handleSilentException(new RuntimeException("Invalid Credentials State"));
                 }
+
                 startServices(credential.getId(), credential.getPassword());
             } else {
                 logger.info("failed to retrieve login credentials");
@@ -98,6 +101,8 @@ public class ZevrantServices extends Activity implements Observer {
             UpdateService.init(getApplicationContext());
         } catch (IOException ex) {
             logger.error(ex.getMessage() + ExceptionUtils.getStackTrace(ex));
+            ACRA.getErrorReporter().handleSilentException(ex);
+
         }
     }
 
@@ -106,19 +111,21 @@ public class ZevrantServices extends Activity implements Observer {
         serviceIntent.putExtra("username", username);
         serviceIntent.putExtra("password", password);
         if(isMyServiceRunning(MainService.class)) {
-            stopService(serviceIntent);
+            logger.info("Service has been found running, stopping...");
+            if(!stopService(serviceIntent)) {
+                throw new RuntimeException("Failed to stop Main Service aborting");
+            }
         }
         startService(serviceIntent);
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
+        boolean isRunning = false;
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
+            isRunning = isRunning || serviceClass.getName().equals(service.service.getClassName());
         }
-        return false;
+        return isRunning;
     }
 
     public boolean hasAtLeastOneVisibleChild(ViewGroup parent) {

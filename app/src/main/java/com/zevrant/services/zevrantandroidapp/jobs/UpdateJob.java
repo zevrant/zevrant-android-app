@@ -25,6 +25,7 @@ import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.services.UpdateService;
 
+import org.acra.ACRA;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,7 @@ public class UpdateJob extends Worker {
             try {
                 pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             } catch (PackageManager.NameNotFoundException e) {
+                ACRA.getErrorReporter().handleSilentException(e);
                 e.printStackTrace();
             }
             assert pInfo != null;
@@ -97,7 +99,7 @@ public class UpdateJob extends Worker {
                             SharedPreferences.Editor editor = sharedPreferences.edit();
                             editor.putString(context.getString(R.string.version), updateCheckResponse.getLatestVersion()).commit();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            ACRA.getErrorReporter().handleSilentException(e);
                         } finally {
                             if(apkFile.exists()) {
                                 if(!apkFile.delete()) {
