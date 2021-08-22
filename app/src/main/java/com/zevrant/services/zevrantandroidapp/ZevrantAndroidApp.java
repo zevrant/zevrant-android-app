@@ -41,7 +41,7 @@ public class ZevrantAndroidApp extends Application {
                 .setBasicAuthLogin(base.getString(R.string.reportsUsername))
                 .setBasicAuthPassword(base.getString(R.string.reportsPassword))
                 .setHttpMethod(HttpSender.Method.POST)
-                .setUri("https://develop.acrarium.zevrant-services.com/report")
+                .setUri(base.getString(R.string.reportsUrl))
                 .setEnabled(true);
         // The following line triggers the initialization of ACRA
         ACRA.init(this, builder);

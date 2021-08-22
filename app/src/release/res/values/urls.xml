@@ -2,6 +2,7 @@
 <resources>
     <string name="backup_base_url">https://zevrant-services.com/zevrant-backup-service</string>
     <string name="oauth_base_url">https://zevrant-services.com/zevrant-oauth2-service</string>
+    <string name="reportsUrl">https://acrarium.zevrant-services.com/report</string>
     <string name="s3BucketLocation">zevrant-apk-store</string>
     <string name="artifactFolder">release</string>
     <string name="testUpdate">true</string>

@@ -1,5 +1,7 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -12,6 +14,10 @@ public class JsonParser {
 
     private static final Logger logger = LoggerFactory.getLogger(JsonParser.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static {
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+    }
 
     public synchronized static <T> T readValueFromString(String jsonString, Class<T> clazz) {
         try {

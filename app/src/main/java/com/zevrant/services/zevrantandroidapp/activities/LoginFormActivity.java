@@ -1,6 +1,7 @@
 package com.zevrant.services.zevrantandroidapp.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.IntentSender;
 import android.os.Bundle;
 import android.widget.Button;
@@ -64,6 +65,8 @@ public class LoginFormActivity extends Activity {
                             if (task.isSuccessful()) {
                                 logger.info("Credentials Successfully Saved ");
                                 CredentialsService.setCredential(credential);
+                                Intent intent = new Intent(this, ZevrantServices.class);
+                                startActivity(intent);
                             }
 
                             Exception e = task.getException();
@@ -86,10 +89,8 @@ public class LoginFormActivity extends Activity {
 
                                 logger.error(ExceptionUtils.getStackTrace(e));
                                 Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
-                            } else {
-                                logger.error("Login Task threw an exception but no exception could be retrieved");
-                                Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
                             }
+                            ACRA.getErrorReporter().handleSilentException(e);
                         });
 
                     } catch (Exception ex) {
