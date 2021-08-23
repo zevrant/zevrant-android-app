@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import com.zevrant.services.zevrantandroidapp.pojo.BackupFileRequest;
 import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
 import com.zevrant.services.zevrantandroidapp.pojo.FileInfo;
 import com.zevrant.services.zevrantandroidapp.pojo.OAuthToken;
@@ -17,11 +18,13 @@ import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
-import com.zevrant.services.zevrantandroidapp.pojo.BackupFileRequest;
 
+import org.acra.ACRA;
+import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
@@ -71,6 +74,7 @@ public class PhotoBackup extends Worker {
                 processMediaStoreResultSet(idColumn, nameColumn, sizeColumn, cursor, uri, fileInfoList);
             }
         } catch (IOException | NoSuchAlgorithmException e) {
+            ACRA.getErrorReporter().handleSilentException(e);
             e.printStackTrace();
         }
 
@@ -92,20 +96,37 @@ public class PhotoBackup extends Worker {
                 assert existence != null;
                 assert existence.getFileInfos() != null;
                 logger.info("Successfully checked existence of file hashes {} files were not found on backup server", existence.getFileInfos().size());
-//                    existence.getFileInfos().forEach( fileInfo -> {
-                FileInfo fileInfo = existence.getFileInfos().get(0);
+                long i = 1L;
                 try {
                     logger.info("retrieved file info");
-                    BackupFileRequest backupFileRequest = new BackupFileRequest(fileInfo, JobUtilities.bytesToHex(getFileBytes(uri, fileInfo)));
-                    logger.info(backupFileRequest.toString());
-                    BackupService.backupFile(backupFileRequest, oAuthToken, response -> {
-                        logger.info("{} was successfully backed up", fileInfo.getFileName());
-                    });
+                    sendBackUp(existence.getFileInfos(), oAuthToken, uri, 0);
                 } catch (IOException e) {
                     logger.error("Failed to read img file skipping...");
+                    ACRA.getErrorReporter().handleSilentException(e);
                 }
-//                    });
+
             });
+        });
+    }
+
+    private void sendBackUp(List<FileInfo> fileInfos, OAuthToken oAuthToken, Uri uri, int index) throws IOException {
+        if (fileInfos.size() <= index) {
+            return;
+        }
+//        if (!BuildConfig.BUILD_TYPE.equals("release") && index > 0) {
+//            return;
+//        }
+        FileInfo fileInfo = fileInfos.get(index);
+        BackupFileRequest backupFileRequest = new BackupFileRequest(fileInfo, JobUtilities.bytesToHex(getFileBytes(uri, fileInfo)));
+        logger.info(backupFileRequest.toString());
+        BackupService.backupFile(backupFileRequest, oAuthToken, response -> {
+            logger.info("{} was successfully backed up", fileInfo.getFileName());
+            try {
+                sendBackUp(fileInfos, oAuthToken, uri, index + 1);
+            } catch (IOException e) {
+                logger.error("backup failed in callback for file info {}", fileInfo.getId());
+                ACRA.getErrorReporter().handleSilentException(e);
+            }
         });
     }
 
@@ -131,7 +152,7 @@ public class PhotoBackup extends Worker {
         long id = cursor.getLong(idColumn);
         String name = cursor.getString(nameColumn);
         long size = cursor.getLong(sizeColumn);
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        MessageDigest digest = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_512);
 
         InputStream is = getApplicationContext()
                 .getContentResolver()

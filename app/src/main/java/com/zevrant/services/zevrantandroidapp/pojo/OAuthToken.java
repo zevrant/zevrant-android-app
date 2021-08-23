@@ -5,8 +5,10 @@ package com.zevrant.services.zevrantandroidapp.pojo;
 // (powered by FernFlower decompiler)
 //
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect
 public class OAuthToken {
     @JsonProperty("access_token")
     private String accessToken;

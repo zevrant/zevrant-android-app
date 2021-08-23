@@ -1,7 +1,9 @@
 package com.zevrant.services.zevrantandroidapp.pojo;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonAutoDetect
 public class OAuthTokenRequest {
 
     @JsonProperty("client_id")

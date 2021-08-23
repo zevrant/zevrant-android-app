@@ -2,6 +2,10 @@
 <resources>
     <string name="backup_base_url">https://192.168.1.21:8080/zevrant-backup-service</string>
     <string name="oauth_base_url">https://192.168.1.21:8080/zevrant-oauth2-service</string>
+    <string name="reportsUrl">https://develop.acrarium.zevrant-services.com/report</string>
     <string name="s3BucketLocation">zevrant-apk-store</string>
     <string name="artifactFolder">local</string>
+    <string name="testUpdate">true</string>
+    <string name="reportsUsername">ztL8IeRqLNL7myRb</string>
+    <string name="reportsPassword">xtOHOOueeHOl5uNn</string>
 </resources>
