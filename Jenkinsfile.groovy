@@ -6,6 +6,7 @@ pipeline {
         stage('Launch Build') {
             steps {
                 script {
+                    sh 'printenv'
                     build(
                             job: 'Android/Zevrant Android App/zevrant-android-app',
                             propagate: true,

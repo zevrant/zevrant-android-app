@@ -9,7 +9,6 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.credentials.Credential;
-import com.google.android.gms.auth.api.credentials.CredentialRequestResult;
 import com.google.android.gms.auth.api.credentials.Credentials;
 import com.google.android.gms.auth.api.credentials.CredentialsClient;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -57,42 +56,9 @@ public class LoginFormActivity extends Activity {
                     try {
                         Credential credential = new Credential.Builder(username)
                                 .setPassword(password)
-//                                .setAccountType(getString(R.string.oauth_base_url))
                                 .build();
+                        saveCredentials(credential);
                         CredentialsService.setCredential(credential);
-                        Task<Void> task = credentialsClient.save(credential);
-                        task.addOnCompleteListener(task1 -> {
-                            if (task.isSuccessful()) {
-                                logger.info("Credentials Successfully Saved ");
-                                CredentialsService.setCredential(credential);
-                                Intent intent = new Intent(this, ZevrantServices.class);
-                                startActivity(intent);
-                            }
-
-                            Exception e = task.getException();
-
-                            if (e instanceof ResolvableApiException) {
-                                // Try to resolve the save request. This will prompt the user if
-                                // the credential is new.
-                                ResolvableApiException rae = (ResolvableApiException) e;
-                                try {
-                                    rae.startResolutionForResult(this, 0); //TODO not sure what the int here signifies, supposed to use the constant RC_SAVE idk where that comes from
-                                    CredentialsService.setCredential(credential);
-                                } catch (IntentSender.SendIntentException exception) {
-                                    ACRA.getErrorReporter().handleSilentException(e);
-                                    // Could not resolve the request
-                                    logger.error("Failed to send resolution.", exception);
-                                    Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
-                                }
-                            } else if(e != null){
-                                // Request has no resolution
-
-                                logger.error(ExceptionUtils.getStackTrace(e));
-                                Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
-                            }
-                            ACRA.getErrorReporter().handleSilentException(e);
-                        });
-
                     } catch (Exception ex) {
                         logger.error(ExceptionUtils.getStackTrace(ex));
                         ACRA.getErrorReporter().handleSilentException(ex);
@@ -101,6 +67,43 @@ public class LoginFormActivity extends Activity {
                 }
             });
 
+        });
+    }
+
+    private void saveCredentials(Credential credential) {
+        Task<Void> task = credentialsClient.save(credential);
+        task.addOnCompleteListener(task1 -> {
+            if (task.isSuccessful()) {
+                logger.info("Credentials Successfully Saved ");
+                CredentialsService.setCredential(credential);
+                Intent intent = new Intent(this, ZevrantServices.class);
+                startActivity(intent);
+                return;
+            }
+
+            Exception e = task.getException();
+
+            if (e instanceof ResolvableApiException) {
+                // Try to resolve the save request. This will prompt the user if
+                // the credential is new.
+                ResolvableApiException rae = (ResolvableApiException) e;
+                try {
+                    rae.startResolutionForResult(this, 0); //TODO not sure what the int here signifies, supposed to use the constant RC_SAVE idk where that comes from
+                    CredentialsService.setCredential(credential);
+                    saveCredentials(credential);
+                } catch (IntentSender.SendIntentException exception) {
+                    ACRA.getErrorReporter().handleSilentException(e);
+                    // Could not resolve the request
+                    logger.error("Failed to send resolution.", exception);
+                    Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
+                }
+            } else if(e != null){
+                // Request has no resolution
+
+                logger.error(ExceptionUtils.getStackTrace(e));
+                Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
+                ACRA.getErrorReporter().handleSilentException(e);
+            }
         });
     }
 }
