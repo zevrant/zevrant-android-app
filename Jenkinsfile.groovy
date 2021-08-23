@@ -6,13 +6,14 @@ pipeline {
         stage('Launch Build') {
             steps {
                 script {
-                    sh 'printenv'
+                    String repoName = env.JOB_NAME.split("/")[1].toLowerCase().replaceAll("\\h", "-")
                     build(
                             job: 'Android/Zevrant Android App/zevrant-android-app',
                             propagate: true,
                             wait: true,
                             parameters: [
                                     [$class: 'StringParameterValue', name: 'BRANCHNAME', value: env.BRANCH_NAME],
+                                    [$class: 'StringParameterValue', name: 'REPOSITORY', value: repoName]
                             ]
                     )
                 }
