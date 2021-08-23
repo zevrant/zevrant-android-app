@@ -12,7 +12,6 @@ pipeline {
                             wait: true,
                             parameters: [
                                     [$class: 'StringParameterValue', name: 'BRANCHNAME', value: env.BRANCH_NAME],
-                                    [$class: 'StringParameterValue', name: 'REPOSITORY', value: repoName]
                             ]
                     )
                 }
