@@ -28,7 +28,7 @@ public class OAuthService {
 
     public static void login(String username, String password, Response.Listener<String> responseCallback) {
         RequestFuture<String> future = RequestFuture.newFuture();
-        logger.info("ZEV: requesting token from {}", oauthUrl.concat("/oauth/token"));
+        logger.info("requesting token from {}", oauthUrl.concat("/oauth/token"));
         OAuthTokenRequest tokenRequest = new OAuthTokenRequest();
         tokenRequest.setClientId(username);
         tokenRequest.setClientSecret(password);

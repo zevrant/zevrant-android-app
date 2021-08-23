@@ -19,6 +19,8 @@ import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.CredentialRequest;
 import com.google.android.gms.auth.api.credentials.Credentials;
 import com.google.android.gms.auth.api.credentials.CredentialsClient;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.pojo.CredentialWrapper;
@@ -44,16 +46,43 @@ public class ZevrantServices extends Activity implements Observer {
 
     private Button loginButton;
     private BottomAppBar bottomAppBar;
-    private SharedPreferences settings;
-    private CredentialsClient credentialsClient;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initServices();
-        settings = getSharedPreferences(getString(R.string.app_name), Context.MODE_PRIVATE);
-        credentialsClient = Credentials.getClient(this);
+        checkIfGooglePlayInstalled();
+
+        setContentView(R.layout.activity_main);
+
+        initViewGlue();
+        checkPermissions();
+        getCredentials();
+    }
+
+    private void checkPermissions() {
+        if (ContextCompat.checkSelfPermission(
+                getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE) !=
+                PackageManager.PERMISSION_GRANTED) {
+            // You can use the API that requires the permission.
+            // The registered ActivityResultCallback gets the result of this request.
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+        }
+    }
+
+    private void initViewGlue() {
+        bottomAppBar = findViewById(R.id.mainActivityBottomAppBar);
+        loginButton = findViewById(R.id.loginButton);
+
+        loginButton.setOnClickListener((view) -> {
+            Intent intent = new Intent(this, LoginFormActivity.class);
+            startActivity(intent);
+        });
+    }
+
+    private void getCredentials() {
+        CredentialsClient credentialsClient = Credentials.getClient(this);
         CredentialRequest credentialRequest = new CredentialRequest.Builder()
                 .setPasswordLoginSupported(true)
                 .setAccountTypes(getString(R.string.oauth_base_url))
@@ -65,31 +94,37 @@ public class ZevrantServices extends Activity implements Observer {
                     logger.error("LIES!!!! google smartlock responded success but does not have credentials");
                     ACRA.getErrorReporter().handleSilentException(new RuntimeException("Invalid Credentials State"));
                 }
-
+                CredentialsService.setCredential(credential);
                 startServices(credential.getId(), credential.getPassword());
             } else {
                 logger.info("failed to retrieve login credentials");
 
             }
         });
+    }
 
-        setContentView(R.layout.activity_main);
-        bottomAppBar = findViewById(R.id.mainActivityBottomAppBar);
-        loginButton = findViewById(R.id.loginButton);
-
-        loginButton.setOnClickListener((view) -> {
-            Intent intent = new Intent(this, LoginFormActivity.class);
-            startActivity(intent);
-        });
-        if (ContextCompat.checkSelfPermission(
-                getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE) !=
-                PackageManager.PERMISSION_GRANTED) {
-            // You can use the API that requires the permission.
-            // The registered ActivityResultCallback gets the result of this request.
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+    private void checkIfGooglePlayInstalled() {
+        int result = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(getApplicationContext());
+        switch (result) {
+            case ConnectionResult.SUCCESS:
+                logger.info("Connection Success no action needed");
+                break;
+            case ConnectionResult.SERVICE_MISSING:
+                logger.error("Google Play Services Missing");
+                break;
+            case ConnectionResult.SERVICE_UPDATING:
+                logger.info("Google Play Services updating retring in 1 minute");
+                break;
+            case ConnectionResult.SERVICE_VERSION_UPDATE_REQUIRED:
+                logger.info("Google Play Services update required");
+                break;
+            case ConnectionResult.SERVICE_DISABLED:
+                logger.error("Google Play Services disabled");
+                break;
+            case ConnectionResult.SERVICE_INVALID:
+                logger.error("Google Play Services invalid?");
+                break;
         }
-
-
     }
 
     private void initServices() {

@@ -1,4 +1,4 @@
-package com.zevrant.service.zevrantandroidapp;
+package com.zevrant.services.zevrantandroidapp;
 
 import org.acra.ACRA;
 

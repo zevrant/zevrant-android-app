@@ -1,4 +1,4 @@
-package com.zevrant.service.zevrantandroidapp;
+package com.zevrant.services.zevrantandroidapp;
 
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;

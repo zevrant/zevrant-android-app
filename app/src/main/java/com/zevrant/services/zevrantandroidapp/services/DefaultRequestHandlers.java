@@ -8,6 +8,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CompletableFuture;
+
 public class DefaultRequestHandlers {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultRequestHandlers.class);
@@ -33,4 +35,7 @@ public class DefaultRequestHandlers {
 
     };
 
+    public static Response.Listener<String> getResponseListener(CompletableFuture<String> future) {
+        return future::complete;
+    }
 }

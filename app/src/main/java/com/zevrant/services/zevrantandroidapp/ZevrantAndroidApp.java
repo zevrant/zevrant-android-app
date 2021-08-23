@@ -5,11 +5,8 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 
-import com.zevrant.service.zevrantandroidapp.NukeSSLCerts;
-
 import org.acra.ACRA;
 import org.acra.annotation.AcraCore;
-import org.acra.annotation.AcraHttpSender;
 import org.acra.config.CoreConfigurationBuilder;
 import org.acra.config.HttpSenderConfigurationBuilder;
 import org.acra.data.StringFormat;

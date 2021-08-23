@@ -15,30 +15,37 @@ import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+
 public class BackupService {
 
     private static String backupUrl;
     private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
 
     public static void init(Context context) {
-        backupUrl = context.getResources().getString(R.string.backup_base_url);
+        backupUrl = context.getString(R.string.backup_base_url);
     }
 
-    public static void checkExistence(CheckExistence checkExistence, OAuthToken oAuthToken, Response.Listener<String> responseCallback) {
+    public static Future<String> checkExistence(CheckExistence checkExistence, String authorization) {
+        CompletableFuture<String> future = new CompletableFuture<>();
         String requestBody = JsonParser.writeValueAsString(checkExistence);
-
-
-        StringRequest objectRequest = new StringRequest(Request.Method.POST, backupUrl.concat("/file-backup/check-existence"), requestBody, responseCallback, DefaultRequestHandlers.errorListener);
-        objectRequest.setOAuthToken(oAuthToken.getAccessToken());
+        StringRequest objectRequest = new StringRequest(Request.Method.POST,
+                backupUrl.concat("/file-backup/check-existence"), requestBody,
+                DefaultRequestHandlers.getResponseListener(future),
+                DefaultRequestHandlers.errorListener);
+        objectRequest.setOAuthToken(authorization);
         RequestQueueService.addToQueue(objectRequest);
+        return future;
     }
 
-    public static void backupFile(BackupFileRequest backupFileRequest, OAuthToken oAuthToken, Response.Listener<String> responseCallback) {
+    public static Future<String> backupFile(BackupFileRequest backupFileRequest, String authorization) {
+        CompletableFuture<String> future = new CompletableFuture<>();
         logger.info(JsonParser.writeValueAsString(backupFileRequest));
         StringRequest request = new StringRequest(Request.Method.PUT,
                 backupUrl.concat("/file-backup"),
                 JsonParser.writeValueAsString(backupFileRequest),
-                responseCallback,
+                DefaultRequestHandlers.getResponseListener(future),
                 DefaultRequestHandlers.errorListener);
         request.setRetryPolicy(new RetryPolicy() {
             @Override
@@ -56,7 +63,8 @@ public class BackupService {
 
             }
         });
-        request.setOAuthToken(oAuthToken.getAccessToken());
+        request.setOAuthToken(authorization);
         RequestQueueService.addToQueue(request);
+        return future;
     }
 }

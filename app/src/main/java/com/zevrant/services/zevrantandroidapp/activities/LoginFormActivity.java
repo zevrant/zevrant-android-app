@@ -1,8 +1,10 @@
 package com.zevrant.services.zevrantandroidapp.activities;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -72,6 +74,10 @@ public class LoginFormActivity extends Activity {
 
     private void saveCredentials(Credential credential) {
         Task<Void> task = credentialsClient.save(credential);
+
+//        GoogleApi googleApi = new GoogleApi(this, Api.);
+//        if()
+
         task.addOnCompleteListener(task1 -> {
             if (task.isSuccessful()) {
                 logger.info("Credentials Successfully Saved ");
@@ -97,13 +103,31 @@ public class LoginFormActivity extends Activity {
                     logger.error("Failed to send resolution.", exception);
                     Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
                 }
-            } else if(e != null){
+            } else if (e != null) {
                 // Request has no resolution
-
-                logger.error(ExceptionUtils.getStackTrace(e));
-                Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
-                ACRA.getErrorReporter().handleSilentException(e);
+                if (StringUtils.isNotBlank(e.getMessage())
+                        && e.getMessage().contains("Cannot find an eligible account")) {
+                    openAlertDialog();
+                } else {
+                    logger.error(ExceptionUtils.getStackTrace(e));
+                    Toast.makeText(this, "Save failed", Toast.LENGTH_SHORT).show();
+                    ACRA.getErrorReporter().handleSilentException(e);
+                }
             }
         });
+    }
+
+    private void openAlertDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.dialogMessage)
+                .setTitle(R.string.googleLoginTitle)
+                .setPositiveButton(R.string.ok, (dialog, id) -> {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse("http://play.google.com/store"));
+                    intent.setPackage("com.android.vending");
+                    startActivity(intent);
+                });
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }

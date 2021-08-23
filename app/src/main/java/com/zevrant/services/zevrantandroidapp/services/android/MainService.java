@@ -14,12 +14,15 @@ import com.zevrant.services.zevrantandroidapp.runnables.BackupJobScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainService extends Service {
 
     private static final Logger logger = LoggerFactory.getLogger(MainService.class);
 
     private BackupJobScheduler runner;
-    private Thread jobCountScheduler;
+    private ExecutorService executorService;
 
     @Nullable
     @Override
@@ -36,7 +39,6 @@ public class MainService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         runner = new BackupJobScheduler(this, intent.getStringExtra("username"), intent.getStringExtra("password"));
-        jobCountScheduler = new Thread(runner);
 
         Notification notification = new NotificationCompat.Builder(this, ZevrantAndroidApp.CHANNEL_ID)
                 .setContentTitle("TEST")
@@ -44,12 +46,12 @@ public class MainService extends Service {
                 .build();
         startForeground(1, notification);
 
-        jobCountScheduler.start();
-
+        executorService = Executors.newCachedThreadPool();
+        executorService.submit(runner);
         return START_REDELIVER_INTENT;
     }
 
     public void onDestroy() {
-        jobCountScheduler.interrupt();
+        executorService.shutdown();
     }
 }

@@ -9,4 +9,7 @@
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="version">VERSION</string>
+    <string name="dialogMessage">This app requires Google Play Services, in order to use you must login to Google Play</string>
+    <string name="googleLoginTitle">Google Play Login Not Found</string>
+    <string name="ok">Ok</string>
 </resources>
