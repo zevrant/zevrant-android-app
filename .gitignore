@@ -14,3 +14,4 @@
 .cxx
 local.properties
 /.idea/
+/app/src/androidTest/java/com/zevrant/services/zevrantandroidapp/secrets/SecretsInitializer.java

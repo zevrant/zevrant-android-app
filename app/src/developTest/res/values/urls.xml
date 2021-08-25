@@ -5,8 +5,8 @@
     <string name="reportsUrl">https://develop.acrarium.zevrant-services.com/report</string>
     <string name="s3BucketLocation">zevrant-apk-store</string>
     <string name="artifactFolder">develop</string>
-    <string name="testUpdate">true</string>
+    <string name="testUpdate">false</string>
     <string name="reportsUsername">7DmnjRWqfqCtAXUl</string>
     <string name="reportsPassword">Aa6bhIoN6owcRZOh</string>
-    <string name="manualServiceTesting">false</string>
+    <string name="manualServiceTesting">true</string>
 </resources>

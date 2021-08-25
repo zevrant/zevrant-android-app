@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.autofill.AutofillManager;
 import android.widget.Button;
 
 import androidx.core.app.ActivityCompat;
@@ -52,6 +53,8 @@ public class ZevrantServices extends Activity implements Observer {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initServices();
+        getApplicationContext().getSystemService(AutofillManager.class)
+                .disableAutofillServices();
         checkIfGooglePlayInstalled();
 
         setContentView(R.layout.activity_main);
@@ -62,6 +65,8 @@ public class ZevrantServices extends Activity implements Observer {
     }
 
     private void checkPermissions() {
+        logger.info("{}", ContextCompat.checkSelfPermission(
+                getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE));
         if (ContextCompat.checkSelfPermission(
                 getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE) !=
                 PackageManager.PERMISSION_GRANTED) {
@@ -87,6 +92,7 @@ public class ZevrantServices extends Activity implements Observer {
                 .setPasswordLoginSupported(true)
                 .setAccountTypes(getString(R.string.oauth_base_url))
                 .build();
+        Context context = getApplicationContext();
         credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> {
             if(task.isSuccessful()) {
                 Credential credential = task.getResult().getCredential();
@@ -95,7 +101,9 @@ public class ZevrantServices extends Activity implements Observer {
                     ACRA.getErrorReporter().handleSilentException(new RuntimeException("Invalid Credentials State"));
                 }
                 CredentialsService.setCredential(credential);
-                startServices(credential.getId(), credential.getPassword());
+                if(!Boolean.parseBoolean(context.getString(R.string.manualServiceTesting))) {
+                    startServices(credential.getId(), credential.getPassword());
+                }
             } else {
                 logger.info("failed to retrieve login credentials");
 
@@ -132,7 +140,7 @@ public class ZevrantServices extends Activity implements Observer {
             RequestQueueService.init(getFilesDir());
             OAuthService.init(getApplicationContext());
             BackupService.init(getApplicationContext());
-            CredentialsService.init();
+            CredentialsService.init(getApplicationContext());
             UpdateService.init(getApplicationContext());
         } catch (IOException ex) {
             logger.error(ex.getMessage() + ExceptionUtils.getStackTrace(ex));

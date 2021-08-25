@@ -22,15 +22,15 @@ public class UpdateService {
     }
 
     public static Future<String> isUpdateAvailable(String version, String authorization) {
-        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        CompletableFuture<String> future = new CompletableFuture<>();
         StringRequest request = new StringRequest(Request.Method.GET,
                 backupUrl.concat("/updates?version=".concat(version)),
                 "",
-                DefaultRequestHandlers.getResponseListener(responseFuture),
-                DefaultRequestHandlers.errorListener);
+                DefaultRequestHandlers.getResponseListener(future),
+                DefaultRequestHandlers.getErrorResponseListener(future));
         request.setOAuthToken(authorization);
         RequestQueueService.addToQueue(request);
-        return responseFuture;
+        return future;
     }
 
     public static Future<InputStream> downloadVersion(String version, String authorization) {
@@ -38,7 +38,7 @@ public class UpdateService {
         InputStreamRequest request = new InputStreamRequest(Request.Method.GET,
                 backupUrl.concat("/updates/download?version=".concat(version)),
                 future::complete,
-                DefaultRequestHandlers.errorListener);
+                DefaultRequestHandlers.getErrorResponseListenerStream(future));
         request.setOAuthToken(authorization);
         RequestQueueService.addToQueue(request);
         return future;

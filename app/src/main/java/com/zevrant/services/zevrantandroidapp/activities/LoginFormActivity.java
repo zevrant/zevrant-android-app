@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.autofill.AutofillManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -59,6 +60,7 @@ public class LoginFormActivity extends Activity {
                         Credential credential = new Credential.Builder(username)
                                 .setPassword(password)
                                 .build();
+
                         saveCredentials(credential);
                         CredentialsService.setCredential(credential);
                     } catch (Exception ex) {

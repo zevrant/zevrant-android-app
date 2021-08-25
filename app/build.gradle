@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.application'
+    id "com.github.spacialcircumstances.gradle-cucumber-reporting" version "0.1.24"
 }
 
 boolean hasSigningInfo = System.getenv("SIGNING_KEYSTORE") != null && System.getenv("KEYSOTRE_PASSWORD");
@@ -10,18 +11,55 @@ if(project.hasProperty('projVersion')) {
     version = project.projVersion
 }
 
+def getInstrumentation() {
+    project.hasProperty('cucumber') ?
+            "" :
+            'androidx.test.runner.AndroidJUnitRunner'
+}
+
+def getTestTags() {
+    project.getProperties().get('tags') ?: ''
+}
+
+def getTestScenario() {
+    project.getProperties().get('scenario') ?: ''
+}
+
+def password = "<REPLACE_ME>"
+//if(password == null || password == '') {
+//    throw new RuntimeException("password is null");
+//}
+
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
 
+    testOptions {
+        unitTests.returnDefaultValues = true
+        animationsDisabled true
+//        uncomment this to run tests with orchestrator
+//        execution 'ANDROIDX_TEST_ORCHESTRATOR'
+    }
+
+    if(project.hasProperty('testVariant')) {
+        testBuildType project.testVariant
+    } else {
+        testBuildType 'developTest'
+    }
+
     defaultConfig {
         applicationId "com.zevrant.services.zevrantandroidapp"
+        testApplicationId "com.zevrant.services.zevrantandroidapp.test"
         minSdkVersion 30
         targetSdkVersion 30
         versionCode 1
         versionName version
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField 'String', 'TEST_TAGS', '"'+getTestTags()+'"'
+        buildConfigField 'String', 'TEST_SCENARIO', '"'+getTestScenario()+'"'
+
+
+        testInstrumentationRunner "com.zevrant.services.zevrantandroidapp.runner.CucumberTestRunner"
     }
 
     signingConfigs {
@@ -46,6 +84,7 @@ android {
 
     buildTypes {
         local {
+            initWith(buildTypes.debug)
             applicationIdSuffix ".local"
             minifyEnabled false
             signingConfig debug.signingConfig
@@ -57,6 +96,16 @@ android {
                 signingConfig signingConfigs.develop
             }
             applicationIdSuffix ".develop"
+            minifyEnabled false
+            signingConfig debug.signingConfig
+            debuggable true
+        }
+
+        developTest {
+            if(hasSigningInfo) {
+                signingConfig signingConfigs.develop
+            }
+            applicationIdSuffix ".developTest"
             minifyEnabled false
             signingConfig debug.signingConfig
             debuggable true
@@ -84,6 +133,8 @@ android {
 }
 
 dependencies {
+    String espressoVersion = '3.4.0'
+    String cucumberVersion = '4.5.4'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     def nav_version = "2.3.5"
@@ -103,5 +154,24 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestImplementation "androidx.test.espresso:espresso-core:$espressoVersion"
+    androidTestImplementation "com.android.support.test.espresso:espresso-intents:$espressoVersion"
+    androidTestImplementation "io.cucumber:cucumber-core:$cucumberVersion"
+    androidTestImplementation "io.cucumber:cucumber-android:$cucumberVersion"
+    androidTestImplementation 'androidx.test:core:1.4.0'
+    androidTestImplementation 'androidx.test:rules:1.4.0'
+    androidTestImplementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.3'
+    androidTestUtil 'androidx.test:orchestrator:1.4.0'
+
+//    androidTestImplementation "io.cucumber:cucumber-java:6.6.0"
+//    androidTestImplementation "io.cucumber:cucumber-picocontainer:6.11.0"
 }
+
+cucumberReports {
+//    outputDir = file('path/for/generated/html')
+    buildId = '0'
+//    reports = files('path/to/cucumber-report.json', 'another/cucumber-json.json')
+    testTasksFinalizedByReport false
+}
+
+

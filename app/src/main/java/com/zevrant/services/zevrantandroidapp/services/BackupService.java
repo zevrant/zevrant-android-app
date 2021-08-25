@@ -33,7 +33,7 @@ public class BackupService {
         StringRequest objectRequest = new StringRequest(Request.Method.POST,
                 backupUrl.concat("/file-backup/check-existence"), requestBody,
                 DefaultRequestHandlers.getResponseListener(future),
-                DefaultRequestHandlers.errorListener);
+                DefaultRequestHandlers.getErrorResponseListener(future));
         objectRequest.setOAuthToken(authorization);
         RequestQueueService.addToQueue(objectRequest);
         return future;
@@ -46,7 +46,7 @@ public class BackupService {
                 backupUrl.concat("/file-backup"),
                 JsonParser.writeValueAsString(backupFileRequest),
                 DefaultRequestHandlers.getResponseListener(future),
-                DefaultRequestHandlers.errorListener);
+                DefaultRequestHandlers.getErrorResponseListener(future));
         request.setRetryPolicy(new RetryPolicy() {
             @Override
             public int getCurrentTimeout() {

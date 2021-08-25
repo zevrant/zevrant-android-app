@@ -1,6 +1,12 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
+import android.content.Context;
+
 import com.google.android.gms.auth.api.credentials.Credential;
+import com.google.android.gms.auth.api.credentials.CredentialRequest;
+import com.google.android.gms.auth.api.credentials.Credentials;
+import com.google.android.gms.auth.api.credentials.CredentialsClient;
+import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.pojo.CredentialWrapper;
 import com.zevrant.services.zevrantandroidapp.pojo.OAuthToken;
@@ -14,7 +20,6 @@ import java.time.LocalDateTime;
 import java.util.Observer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class CredentialsService {
@@ -25,8 +30,11 @@ public class CredentialsService {
 
     private static CredentialWrapper credentialWrapper;
 
-    public static void init() {
+    private static Context context;
+
+    public static void init(Context context) {
         credentialWrapper = new CredentialWrapper();
+        CredentialsService.context = context;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(CredentialsService.class);
@@ -69,20 +77,32 @@ public class CredentialsService {
         return oAuthToken.getAccessToken();
     }
 
-    private static Future<String> getNewOAuthToken() {
+    private static Future<String> getNewOAuthToken() throws CredentialsNotFoundException, ExecutionException, InterruptedException {
         CompletableFuture<String> future = new CompletableFuture<>();
-        Executors.newCachedThreadPool().submit(() -> {
-            Credential credential = credentialWrapper.getCredential();
-            if (credential == null) {
-                throw new CredentialsNotFoundException("No credentials for Zevrant Services found");
-            }
-            OAuthService.login(credential.getId(), credential.getPassword(), response -> {
-                oAuthToken = JsonParser.readValueFromString(response, OAuthToken.class);
-                future.complete("SUCCESS");
-            });
-            return null;
-        });
-
+        Credential credential = credentialWrapper.getCredential();
+        if (credential == null) {
+            throw new CredentialsNotFoundException("No credentials for Zevrant Services found");
+        }
+        Future<String> responseFuture = OAuthService.login(credential.getId(), credential.getPassword());
+        oAuthToken = JsonParser.readValueFromString(responseFuture.get(), OAuthToken.class);
+        future.complete("SUCCESS");
         return future;
+    }
+
+    public static void deleteSmartLockCredentials() {
+        CredentialsClient credentialsClient = Credentials.getClient(context);
+        CredentialRequest credentialRequest = new CredentialRequest.Builder()
+                .setPasswordLoginSupported(true)
+                .setAccountTypes(context.getString(R.string.oauth_base_url))
+                .build();
+
+        credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> {
+            if(task.isSuccessful()) {
+                Credential credential = task.getResult().getCredential();
+                if(credential != null) {
+                    credentialsClient.delete(credential); //just kind of best effort no error checking needed
+                }
+            }
+        });
     }
 }
