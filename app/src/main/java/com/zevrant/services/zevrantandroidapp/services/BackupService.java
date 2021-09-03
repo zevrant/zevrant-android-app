@@ -3,13 +3,11 @@ package com.zevrant.services.zevrantandroidapp.services;
 import android.content.Context;
 
 import com.android.volley.Request;
-import com.android.volley.Response;
 import com.android.volley.RetryPolicy;
 import com.android.volley.VolleyError;
 import com.zevrant.services.zevrantandroidapp.R;
-import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
-import com.zevrant.services.zevrantandroidapp.pojo.OAuthToken;
 import com.zevrant.services.zevrantandroidapp.pojo.BackupFileRequest;
+import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
 import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;
 
 import org.slf4j.Logger;
@@ -40,10 +38,12 @@ public class BackupService {
     }
 
     public static Future<String> backupFile(BackupFileRequest backupFileRequest, String authorization) {
+
         CompletableFuture<String> future = new CompletableFuture<>();
+        logger.info("Backing up file to {}", backupUrl.concat("/file-backup"));
         logger.info(JsonParser.writeValueAsString(backupFileRequest));
         StringRequest request = new StringRequest(Request.Method.PUT,
-                backupUrl.concat("/file-backup"),
+                "https://develop.zevrant-services.com/zevrant-backup-service".concat("/file-backup"),
                 JsonParser.writeValueAsString(backupFileRequest),
                 DefaultRequestHandlers.getResponseListener(future),
                 DefaultRequestHandlers.getErrorResponseListener(future));
@@ -59,7 +59,7 @@ public class BackupService {
             }
 
             @Override
-            public void retry(VolleyError error) throws VolleyError {
+            public void retry(VolleyError error) {
 
             }
         });

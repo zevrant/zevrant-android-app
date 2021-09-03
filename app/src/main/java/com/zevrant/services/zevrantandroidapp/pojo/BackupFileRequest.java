@@ -1,7 +1,5 @@
 package com.zevrant.services.zevrantandroidapp.pojo;
 
-import com.zevrant.services.zevrantandroidapp.pojo.FileInfo;
-
 public class BackupFileRequest {
 
     private FileInfo fileInfo;

@@ -3,7 +3,6 @@ package com.zevrant.services.zevrantandroidapp.services;
 import android.content.Context;
 
 import com.android.volley.Request;
-import com.android.volley.Response;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.volley.requests.InputStreamRequest;
 import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;

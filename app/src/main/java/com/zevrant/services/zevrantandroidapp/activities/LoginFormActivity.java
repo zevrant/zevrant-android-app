@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.autofill.AutofillManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -54,7 +53,7 @@ public class LoginFormActivity extends Activity {
             logger.info("Username is {}", username);
 
             OAuthService.login(username, password, response -> {
-                OAuthToken oAuthToken = JsonParser.readValueFromString(response.toString(), OAuthToken.class);
+                OAuthToken oAuthToken = JsonParser.readValueFromString(response, OAuthToken.class);
                 if (oAuthToken != null && StringUtils.isNotBlank(oAuthToken.getAccessToken())) {
                     try {
                         Credential credential = new Credential.Builder(username)

@@ -50,21 +50,18 @@ public class PhotoBackup extends ListenableWorker {
             MediaStore.Images.Media.SIZE
     };
 
-    private final String username;
-    private final String password;
     private final Context context;
+
 
     public PhotoBackup(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
-        username = workerParams.getInputData().getString("username");
-        password = workerParams.getInputData().getString("password");
         this.context = context;
-        mFuture = SettableFuture.create();
     }
 
     @NonNull
     @Override
     public ListenableFuture<Result> startWork() {
+        mFuture = SettableFuture.create();
         Executors.newCachedThreadPool().submit(() -> {
             Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
             try (Cursor cursor = context.getContentResolver().query(
@@ -75,7 +72,6 @@ public class PhotoBackup extends ListenableWorker {
                     null
             )) {
                 logger.info("Job running");
-                mFuture = SettableFuture.create();
                 List<FileInfo> fileInfoList = new ArrayList<>();
                 logger.info("found {} images", cursor.getCount());
                 int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
@@ -121,6 +117,7 @@ public class PhotoBackup extends ListenableWorker {
         BackupFileRequest backupFileRequest = new BackupFileRequest(fileInfo, JobUtilities.bytesToHex(getFileBytes(uri, fileInfo)));
         logger.info(backupFileRequest.toString());
         String authorization = CredentialsService.getAuthorization();
+        logger.info("backing up file {}", fileInfo.getFileName());
         Future<String> future = BackupService.backupFile(backupFileRequest, authorization);
         future.get();//don't really care about successfull responses just need to block until done otherwise we
         // will enqueue too many requests and throw an OOM exception
@@ -163,7 +160,7 @@ public class PhotoBackup extends ListenableWorker {
     }
 
 
-    private static String getChecksum(MessageDigest digest, InputStream is) throws IOException {
+    public static String getChecksum(MessageDigest digest, InputStream is) throws IOException {
         byte[] bytes = new byte[1024];
         while (is.read(bytes) > -1) {
             digest.update(bytes);

@@ -7,22 +7,15 @@ import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
-
-import android.content.Context;
-
-import androidx.test.espresso.assertion.ViewAssertions;
-import androidx.test.platform.app.InstrumentationRegistry;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.nullValue;
 
 import com.google.android.gms.auth.api.credentials.Credential;
-import com.google.android.gms.auth.api.credentials.CredentialRequest;
-import com.google.android.gms.auth.api.credentials.Credentials;
-import com.google.android.gms.auth.api.credentials.CredentialsClient;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 
-import org.acra.ACRA;
-
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import io.cucumber.java.en.And;
@@ -38,8 +31,8 @@ public class LoginSteps {
     }
 
     @And("I verify no smart lock password has been saved")
-    public void verifySmartLockDoesNotExist() throws ExecutionException, InterruptedException {
-        CredentialsService.deleteSmartLockCredentials();
+    public void verifySmartLockDoesNotExist() {
+        CredentialsService.deleteSmartLockCredentials(BasicSteps.getTargetContext());
     }
 
     @When("^I click the login button$")
@@ -68,6 +61,12 @@ public class LoginSteps {
     @Given("I have logged in as (\\S+)$")
     public void login(String username) {
         basicSteps.pressLoginButton();
+    }
 
+    @And("^I am logged in as (\\S+)$")
+    public void verifyLogin(String username) {
+        Credential credential = CredentialsService.getCredential();
+        assertThat(credential, is(not(nullValue())));
+        assertThat(credential.getId(), is(username));
     }
 }

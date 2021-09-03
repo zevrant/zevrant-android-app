@@ -4,17 +4,13 @@ import android.content.Context;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
-import com.android.volley.toolbox.RequestFuture;
-import com.google.android.gms.common.util.MapUtils;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.pojo.OAuthTokenRequest;
 import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 

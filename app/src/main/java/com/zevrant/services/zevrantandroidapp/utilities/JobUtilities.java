@@ -1,8 +1,5 @@
 package com.zevrant.services.zevrantandroidapp.utilities;
 
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
-import android.content.ComponentName;
 import android.content.Context;
 
 import androidx.work.Constraints;
@@ -10,14 +7,14 @@ import androidx.work.Data;
 import androidx.work.ListenableWorker;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.Operation;
+import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
-
-import com.zevrant.services.zevrantandroidapp.jobs.UpdateJob;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeUnit;
 
 public class JobUtilities {
 
@@ -37,6 +34,27 @@ public class JobUtilities {
                 .build();
 
         return workManager.enqueue(workRequest);
+    }
+
+    public static void schedulePeriodicJob(Context context, Class<? extends ListenableWorker> jobClass,
+                                                Constraints constraints, String tag, Data data) {
+        schedulePeriodicJob(context,jobClass, constraints, tag, data, 1L, TimeUnit.HOURS);
+    }
+
+    public static void schedulePeriodicJob(Context context, Class<? extends ListenableWorker> jobClass,
+                                           Constraints constraints, String tag, Data data, long timeInterval,
+                                           TimeUnit timeUnit) {
+        WorkManager workManager = WorkManager.getInstance(context);
+
+        workManager.cancelAllWorkByTag(tag);
+
+        WorkRequest workRequest = new PeriodicWorkRequest.Builder(jobClass, timeInterval, timeUnit)
+                .addTag(tag)
+                .setConstraints(constraints)
+                .setInputData(data)
+                .build();
+
+        workManager.enqueue(workRequest);
     }
 
     public static String bytesToHex(byte[] bytes) {

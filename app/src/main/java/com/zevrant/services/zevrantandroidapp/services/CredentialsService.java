@@ -30,18 +30,11 @@ public class CredentialsService {
 
     private static CredentialWrapper credentialWrapper;
 
-    private static Context context;
-
-    public static void init(Context context) {
+    public static void init() {
         credentialWrapper = new CredentialWrapper();
-        CredentialsService.context = context;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(CredentialsService.class);
-
-    public void setCredentials(Credential credential) {
-        credentialWrapper.setCredential(credential);
-    }
 
     public void addObserver(Observer observer) {
         credentialWrapper.addObserver(observer);
@@ -58,7 +51,7 @@ public class CredentialsService {
     public static String getAuthorization() throws CredentialsNotFoundException {
         LocalDateTime now = LocalDateTime.now();
         if (expiresAt == null
-                || expiresAt.isAfter(now)
+                || expiresAt.isBefore(now)
                 || expiresAt.isEqual(now)) {
             try {
                 String result = getNewOAuthToken().get();
@@ -72,7 +65,7 @@ public class CredentialsService {
             }
         }
         if (oAuthToken.getAccessToken() == null) {
-            throw new CredentialsNotFoundException("Oauth Service reutrned an oauth token without the actual token");
+            throw new CredentialsNotFoundException("Oauth Service returned an oauth token without the actual token");
         }
         return oAuthToken.getAccessToken();
     }
@@ -89,7 +82,7 @@ public class CredentialsService {
         return future;
     }
 
-    public static void deleteSmartLockCredentials() {
+    public static void deleteSmartLockCredentials(Context context) {
         CredentialsClient credentialsClient = Credentials.getClient(context);
         CredentialRequest credentialRequest = new CredentialRequest.Builder()
                 .setPasswordLoginSupported(true)

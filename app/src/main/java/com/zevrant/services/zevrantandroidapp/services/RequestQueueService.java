@@ -1,6 +1,7 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
 import android.content.Context;
+
 import com.android.volley.Cache;
 import com.android.volley.Network;
 import com.android.volley.RequestQueue;
@@ -17,15 +18,15 @@ import java.io.IOException;
 public class RequestQueueService {
 
     private static RequestQueue requestQueue;
-    private static Context context;
-    private static Cache cache;
     private static boolean hasBeenInitialized = false;
-    private static Network network = new BasicNetwork(new HurlStack());
+    private static final Network network = new BasicNetwork(new HurlStack());
 
 
     public static void init(File filesDir) throws IOException {
+        Cache cache;
         if (!hasBeenInitialized) {
             cache = new DiskBasedCache(filesDir, 1024 * 1024);
+            hasBeenInitialized = true;
         } else {
             throw new RuntimeException("RequestQueueService has already been initialized");
         }
