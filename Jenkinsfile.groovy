@@ -11,7 +11,7 @@ pipeline {
                             propagate: true,
                             wait: true,
                             parameters: [
-                                    [$class: 'StringParameterValue', name: 'BRANCHNAME', value: env.BRANCH_NAME],
+                                    [$class: 'StringParameterValue', name: 'BRANCH_NAME', value: env.BRANCH_NAME],
                             ]
                     )
                 }
