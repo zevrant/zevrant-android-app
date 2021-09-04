@@ -3,21 +3,27 @@ package com.zevrant.services.zevrantandroidapp.steps;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
 
 import androidx.work.Constraints;
 import androidx.work.Data;
-import androidx.work.Operation;
+import androidx.work.ListenableWorker;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
+import androidx.work.testing.TestDriver;
+import androidx.work.testing.TestListenableWorkerBuilder;
+import androidx.work.testing.WorkManagerTestInitHelper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
@@ -31,11 +37,13 @@ import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -43,6 +51,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +61,8 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 
 public class PhotoBackupSteps {
+
+    private static final Logger logger = LoggerFactory.getLogger(PhotoBackupSteps.class);
 
     private void addToList(byte[] bytes, List<Byte> bytesList) {
         for (byte aByte : bytes) {
@@ -66,6 +77,7 @@ public class PhotoBackupSteps {
         List<Byte> bytesList = new ArrayList<>();
         byte[] bytes = new byte[1024];
         BufferedInputStream is = new BufferedInputStream(testContext.getResources().getAssets().open("human.jpg"));
+
         int read = is.read(bytes);
         addToList(bytes, bytesList);
         while (read > 0) {
@@ -97,8 +109,9 @@ public class PhotoBackupSteps {
     }
 
     @And("^I verify the photo was added$")
-    public void verifyPhotoAdded() {
+    public void verifyPhotoAdded() throws NoSuchAlgorithmException, IOException {
         Context context = BasicSteps.getTargetContext();
+        Context testContext = BasicSteps.getTestContext();
         final String[] projection = new String[]{
                 MediaStore.Images.Media._ID,
                 MediaStore.Images.Media.DISPLAY_NAME,
@@ -112,7 +125,24 @@ public class PhotoBackupSteps {
                 new String[]{},
                 null
         )) {
-            assertThat(cursor.getCount(), is(greaterThan(0)));
+            cursor.moveToFirst();
+            assertThat("Media Query Returned No Results", cursor.getCount(), is(greaterThan(0)));
+            assertThat("Column Count less than or equal to zero", cursor.getColumnCount(), is(greaterThan(0)));
+            int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
+            logger.info("Id column is {}", idColumn);
+            assertThat("Negative column value", idColumn, is(greaterThan(-1)));
+            long id = cursor.getLong(idColumn);
+
+            MessageDigest digest = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_512);
+
+            InputStream is = context
+                    .getContentResolver()
+                    .openAssetFileDescriptor(ContentUris.withAppendedId(uri, id), "r")
+                    .createInputStream();
+
+            String fileHash = PhotoBackup.getChecksum(digest,
+                    is);
+            BasicSteps.addContextData("fileHash", fileHash);
         }
     }
 
@@ -120,25 +150,20 @@ public class PhotoBackupSteps {
     public void startBackupService() throws ExecutionException, InterruptedException, TimeoutException {
         Context context = BasicSteps.getTargetContext();
         Constraints constraints = new Constraints.Builder()
-                .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
+                .setTriggerContentMaxDelay(0, TimeUnit.SECONDS)
                 .build();
 
-        Data data = new Data.Builder()
-                .build();
-
-        Operation operation =
-                JobUtilities.scheduleJob(context, PhotoBackup.class, constraints, Constants.BACKUP_TAG, data);
-        Operation.State state = operation.getResult().get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
-
-        assertThat(state.toString(), is(equalTo("SUCCESS")));
+        ListenableWorker.Result result =  TestListenableWorkerBuilder.from(context, PhotoBackup.class)
+                .build().startWork()
+                .get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
+        assertThat("WorkerTask did not succeed", result.toString(), is("Success {mOutputData=Data {}}"));
     }
 
     @And("^I verify the photo was backed up")
     public void verifyPhotoBackup() throws NoSuchAlgorithmException, IOException, CredentialsNotFoundException, InterruptedException, ExecutionException, TimeoutException {
-        MessageDigest digest = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_512);
+
         Context testContext = BasicSteps.getTestContext();
-        String fileHash = PhotoBackup.getChecksum(digest,
-                new BufferedInputStream(testContext.getResources().getAssets().open("human.jpg")));
+        String fileHash = BasicSteps.getContextData("fileHash").toString();
         CheckExistence checkExistence = new CheckExistence();
         checkExistence.setFileInfos(Collections.singletonList(new FileInfo("human.jpg", fileHash, 0L, 0L)));
         Future<String> future =

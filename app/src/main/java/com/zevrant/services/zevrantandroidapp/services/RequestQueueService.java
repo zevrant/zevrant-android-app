@@ -12,10 +12,15 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.zevrant.services.zevrantandroidapp.volley.requests.InputStreamRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 
 public class RequestQueueService {
+
+    private static final Logger logger = LoggerFactory.getLogger(RequestQueueService.class);
 
     private static RequestQueue requestQueue;
     private static boolean hasBeenInitialized = false;
@@ -23,15 +28,14 @@ public class RequestQueueService {
 
 
     public static void init(File filesDir) throws IOException {
-        Cache cache;
         if (!hasBeenInitialized) {
-            cache = new DiskBasedCache(filesDir, 1024 * 1024);
+            Cache cache = new DiskBasedCache(filesDir, 1024 * 1024);
+            requestQueue = new RequestQueue(cache, network);
+            requestQueue.start();
             hasBeenInitialized = true;
         } else {
-            throw new RuntimeException("RequestQueueService has already been initialized");
+            logger.info("RequestQueueService has already been initialized");
         }
-        requestQueue = new RequestQueue(cache, network);
-        requestQueue.start();
     }
 
     public static void addToQueue(JsonObjectRequest request) {

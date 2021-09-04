@@ -12,6 +12,7 @@ import static org.junit.Assert.fail;
 
 import android.app.Instrumentation;
 import android.content.Context;
+import android.util.Log;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.Espresso;
@@ -22,6 +23,9 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
+import androidx.work.Configuration;
+import androidx.work.testing.SynchronousExecutor;
+import androidx.work.testing.WorkManagerTestInitHelper;
 
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
@@ -34,6 +38,8 @@ import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -47,9 +53,18 @@ public class BasicSteps {
 
     private ActivityScenario<ZevrantServices> scenario;
     private ZevrantServices zevrantActivity;
+    private static final Map<String, Object> context = new HashMap<>();;
 
     public BasicSteps() {
 
+    }
+
+    public static void addContextData(String key, Object value) {
+        context.put(key, value);
+    }
+
+    public static Object getContextData(String key) {
+        return context.get(key);
     }
 
     public static Context getTargetContext() {
@@ -67,8 +82,16 @@ public class BasicSteps {
     @Before
     public void setup() {
         scenario = ActivityScenario.launch(ZevrantServices.class);
+
         scenario.onActivity((activity) -> {
             zevrantActivity = activity;
+            Configuration config = new Configuration.Builder()
+                    .setMinimumLoggingLevel(Log.DEBUG)
+                    .setExecutor(new SynchronousExecutor())
+                    .build();
+
+            WorkManagerTestInitHelper.initializeTestWorkManager(
+                    getTargetContext(), config);
 //            zevrantActivity.initServices(getTargetContext());
         });
     }
@@ -76,6 +99,7 @@ public class BasicSteps {
     @After
     public void tearDown() throws CredentialsNotFoundException, ExecutionException, InterruptedException, TimeoutException {
 //        scenario.close();
+        context.clear();
         Future<String> future = CleanupService.eraseBackups(CredentialsService.getAuthorization());
         assertThat(future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT), is(not(containsString("error"))));
     }

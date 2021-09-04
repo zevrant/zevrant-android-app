@@ -8,12 +8,12 @@ import android.net.Uri;
 import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
+import androidx.work.Data;
 import androidx.work.ListenableWorker;
 import androidx.work.WorkerParameters;
 import androidx.work.impl.utils.futures.SettableFuture;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.zevrant.services.zevrantandroidapp.BuildConfig;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.pojo.BackupFileRequest;
 import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
@@ -35,7 +35,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 @SuppressLint("RestrictedApi")
@@ -51,18 +50,19 @@ public class PhotoBackup extends ListenableWorker {
     };
 
     private final Context context;
-
+    private final Data.Builder dataBuilder;
 
     public PhotoBackup(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         this.context = context;
+        this.dataBuilder = new Data.Builder();
     }
 
     @NonNull
     @Override
     public ListenableFuture<Result> startWork() {
         mFuture = SettableFuture.create();
-        Executors.newCachedThreadPool().submit(() -> {
+        getBackgroundExecutor().execute(() -> {
             Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
             try (Cursor cursor = context.getContentResolver().query(
                     uri,
@@ -84,6 +84,7 @@ public class PhotoBackup extends ListenableWorker {
             } catch (IOException | NoSuchAlgorithmException | CredentialsNotFoundException | ExecutionException | InterruptedException e) {
                 ACRA.getErrorReporter().handleSilentException(e);
                 e.printStackTrace();
+                mFuture.set(Result.failure());
             }
         });
         return mFuture;
@@ -100,16 +101,14 @@ public class PhotoBackup extends ListenableWorker {
         List<FileInfo> fileInfos = existence.getFileInfos();
         for (int i = 0; i < fileInfos.size(); i++) {
             try {
-                if (!BuildConfig.BUILD_TYPE.equals("release") && i > 0) {
-                    return;
-                }
                 sendBackUp(fileInfos.get(i), uri);
             } catch (IOException e) {
                 logger.error("Failed to read img file skipping...");
                 ACRA.getErrorReporter().handleSilentException(e);
             }
         }
-        mFuture.set(Result.success());
+        Data data = dataBuilder.build();
+        mFuture.set(Result.success(data));
 
     }
 
