@@ -4,7 +4,7 @@
 #Scenario Outline: Successful Login
 #  Given I start the application
 #  And I verify no smart lock password has been saved
-#  And I grant permission to access storage
+#  And I grant permission to aczcess storage
 #  When I click the home login button
 #  And I verify the page transition to the login page
 #  And I enter the login username for user <username>

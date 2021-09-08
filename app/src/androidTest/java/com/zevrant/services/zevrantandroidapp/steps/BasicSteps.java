@@ -1,5 +1,6 @@
 package com.zevrant.services.zevrantandroidapp.steps;
 
+import static android.content.Context.ACCOUNT_SERVICE;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -10,9 +11,14 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
+import android.widget.EditText;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.Espresso;
@@ -53,7 +59,8 @@ public class BasicSteps {
 
     private ActivityScenario<ZevrantServices> scenario;
     private ZevrantServices zevrantActivity;
-    private static final Map<String, Object> context = new HashMap<>();;
+    private static final Map<String, Object> context = new HashMap<>();
+    ;
 
     public BasicSteps() {
 
@@ -100,15 +107,54 @@ public class BasicSteps {
     public void tearDown() throws CredentialsNotFoundException, ExecutionException, InterruptedException, TimeoutException {
 //        scenario.close();
         context.clear();
+        if (CredentialsService.hasAuthorization()) {
+            CredentialsService.getAuthorization();
+        }
         Future<String> future = CleanupService.eraseBackups(CredentialsService.getAuthorization());
         assertThat(future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT), is(not(containsString("error"))));
     }
 
     @Given("^I start the application$")
-    public void iStartTheApplication() throws InterruptedException {
+    public void iStartTheApplication() throws InterruptedException, UiObjectNotFoundException {
         assertNotNull(zevrantActivity);
         SecretsInitializer.init();
-        Thread.sleep(3000);
+        grantStoragePermission();
+
+        if (CredentialsService.getCredential() == null) {
+            Intent playStoreIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store"));
+            playStoreIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getTargetContext().startActivity(playStoreIntent);
+            Thread.sleep(2000);
+            Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+            UiDevice device = UiDevice.getInstance(instrumentation);
+            UiObject signIn = device.findObject(new UiSelector().textStartsWith("SIGN IN").clickable(true));
+            if(signIn.exists()) {
+                signIn.click();
+                Thread.sleep(2000);
+                UiObject email = device.findObject(new UiSelector().className(EditText.class));
+                email.click();
+                email.setText("zevrantservices@gmail.com");
+                UiObject next = device.findObject(new UiSelector().textStartsWith("NEXT"));
+                next.click();
+                UiObject password = device.findObject(new UiSelector().focused(true));
+                password.setText(Secrets.getPassword("zevrantservices@gmail.com"));
+                next = device.findObject(new UiSelector().textStartsWith("NEXT"));
+                next.click();
+                UiObject uiObject = device.findObject(new UiSelector().textStartsWith("I agree"));
+                uiObject.click();
+                UiObject more = device.findObject(new UiSelector().textStartsWith("MORE"));
+                assertThat(more.exists(), is(true));
+                while (more.exists()) {
+                    more.click();
+                }
+                UiObject accept = device.findObject(new UiSelector().textStartsWith("ACCEPT"));
+                accept.click();
+            }
+            Intent intent = zevrantActivity.getIntent();
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getTargetContext().startActivity(intent);
+            Thread.sleep(3000);
+        }
     }
 
     @And("I verify the page transition to the login page")
@@ -134,6 +180,7 @@ public class BasicSteps {
     public void grantStoragePermission() throws UiObjectNotFoundException {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         UiObject allowPermission = UiDevice.getInstance(instrumentation).findObject(new UiSelector().text("Allow"));
+        allowPermission.waitForExists(3000);
         if (allowPermission.exists()) {
             allowPermission.click();
         } else {

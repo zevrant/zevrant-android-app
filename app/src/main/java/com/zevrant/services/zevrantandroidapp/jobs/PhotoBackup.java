@@ -129,16 +129,11 @@ public class PhotoBackup extends ListenableWorker {
                 .openAssetFileDescriptor(ContentUris.withAppendedId(uri, fileInfo.getId()), "r")
                 .createInputStream();
 
-        if (is.available() != fileInfo.getSize()) {
-            logger.error("Not all bytes available!!!");
-            throw new RuntimeException("Not all bytes available!!!");
-        } else {
-            byte[] bytes = new byte[(int) fileInfo.getSize()];
-            int read = is.read(bytes);
-            logger.info(String.valueOf(read));
-            assert read == fileInfo.getSize();
-            return bytes;
-        }
+        byte[] bytes = new byte[(int) fileInfo.getSize()];
+        int read = is.read(bytes);
+        logger.info(String.valueOf(read));
+        assert read == fileInfo.getSize();
+        return bytes;
     }
 
     private void processMediaStoreResultSet(int idColumn, int nameColumn, int sizeColumn, Cursor cursor, Uri uri, List<FileInfo> fileInfoList) throws NoSuchAlgorithmException, IOException {

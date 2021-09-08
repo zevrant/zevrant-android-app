@@ -43,7 +43,7 @@ public class BackupService {
         logger.info("Backing up file to {}", backupUrl.concat("/file-backup"));
         logger.info(JsonParser.writeValueAsString(backupFileRequest));
         StringRequest request = new StringRequest(Request.Method.PUT,
-                "https://develop.zevrant-services.com/zevrant-backup-service".concat("/file-backup"),
+                backupUrl.concat("/file-backup"),
                 JsonParser.writeValueAsString(backupFileRequest),
                 DefaultRequestHandlers.getResponseListener(future),
                 DefaultRequestHandlers.getErrorResponseListener(future));
@@ -63,6 +63,18 @@ public class BackupService {
 
             }
         });
+        request.setOAuthToken(authorization);
+        RequestQueueService.addToQueue(request);
+        return future;
+    }
+
+    public static Future<String> getAlllHashes(String authorization) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        StringRequest request = new StringRequest(Request.Method.GET,
+                backupUrl.concat("/file-backup"),
+                null,
+                DefaultRequestHandlers.getResponseListener(future),
+                DefaultRequestHandlers.getErrorResponseListener(future));
         request.setOAuthToken(authorization);
         RequestQueueService.addToQueue(request);
         return future;

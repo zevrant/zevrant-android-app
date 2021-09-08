@@ -12,6 +12,7 @@ import com.zevrant.services.zevrantandroidapp.pojo.CredentialWrapper;
 import com.zevrant.services.zevrantandroidapp.pojo.OAuthToken;
 
 import org.acra.ACRA;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,10 @@ public class CredentialsService {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(CredentialsService.class);
+
+    public static boolean hasAuthorization() {
+        return oAuthToken != null && StringUtils.isNotBlank(oAuthToken.getAccessToken());
+    }
 
     public void addObserver(Observer observer) {
         credentialWrapper.addObserver(observer);

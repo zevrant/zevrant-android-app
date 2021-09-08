@@ -25,6 +25,7 @@ import androidx.work.testing.TestDriver;
 import androidx.work.testing.TestListenableWorkerBuilder;
 import androidx.work.testing.WorkManagerTestInitHelper;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
@@ -153,24 +154,25 @@ public class PhotoBackupSteps {
                 .setTriggerContentMaxDelay(0, TimeUnit.SECONDS)
                 .build();
 
-        ListenableWorker.Result result =  TestListenableWorkerBuilder.from(context, PhotoBackup.class)
+        ListenableWorker.Result result = TestListenableWorkerBuilder.from(context, PhotoBackup.class)
                 .build().startWork()
                 .get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
         assertThat("WorkerTask did not succeed", result.toString(), is("Success {mOutputData=Data {}}"));
     }
 
     @And("^I verify the photo was backed up")
-    public void verifyPhotoBackup() throws NoSuchAlgorithmException, IOException, CredentialsNotFoundException, InterruptedException, ExecutionException, TimeoutException {
+    public void verifyPhotoBackup() throws IOException, CredentialsNotFoundException, InterruptedException, ExecutionException, TimeoutException {
 
-        Context testContext = BasicSteps.getTestContext();
         String fileHash = BasicSteps.getContextData("fileHash").toString();
         CheckExistence checkExistence = new CheckExistence();
         checkExistence.setFileInfos(Collections.singletonList(new FileInfo("human.jpg", fileHash, 0L, 0L)));
         Future<String> future =
-                BackupService.checkExistence(checkExistence, CredentialsService.getAuthorization());
+                BackupService.getAlllHashes(CredentialsService.getAuthorization());
         String responseString = future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
         ObjectMapper objectMapper = new ObjectMapper();
-        CheckExistence checkExistenceResponse = objectMapper.readValue(responseString, CheckExistence.class);
-        assertThat(checkExistenceResponse.getFileInfos().size(), is(equalTo(0)));
+        List<String> hashes = objectMapper.readValue(responseString, new TypeReference<List<String>>(){});
+
+        assertThat(hashes.size(), is(equalTo(1)));
+        assertThat(hashes.get(0), is(equalTo(fileHash)));
     }
 }
