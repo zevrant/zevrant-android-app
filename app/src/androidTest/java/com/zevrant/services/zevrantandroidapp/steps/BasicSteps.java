@@ -107,6 +107,9 @@ public class BasicSteps {
     public void tearDown() throws CredentialsNotFoundException, ExecutionException, InterruptedException, TimeoutException {
 //        scenario.close();
         context.clear();
+        if(CredentialsService.getCredential() == null) {
+            return;
+        }
         if (CredentialsService.hasAuthorization()) {
             CredentialsService.getAuthorization();
         }
