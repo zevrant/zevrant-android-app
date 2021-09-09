@@ -1,11 +1,12 @@
 include ':app'
 rootProject.name = "Zevrant Android App"
 
-boolean isCiServer = System.getenv("HOME").contains("jenkins")
-
-buildCache {
-    remote(HttpBuildCache) {
-        url = 'http://zevrant-gradle-cache-service/cache/'
-        push = isCiServer
-    }
-}
+//boolean isCiServer = System.getenv("HOME").contains("jenkins")
+//
+//buildCache {
+//    remote(HttpBuildCache) {
+//        url = 'http://zevrant-gradle-cache-service/cache/'
+//        push = isCiServer
+//        it.allowUntrustedServer = true
+//    }
+//}

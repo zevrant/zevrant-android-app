@@ -1,6 +1,5 @@
 package com.zevrant.services.zevrantandroidapp.steps;
 
-import static android.content.Context.ACCOUNT_SERVICE;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
@@ -11,8 +10,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
@@ -40,6 +37,7 @@ import com.zevrant.services.zevrantandroidapp.secrets.Secrets;
 import com.zevrant.services.zevrantandroidapp.secrets.SecretsInitializer;
 import com.zevrant.services.zevrantandroidapp.services.CleanupService;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
+import com.zevrant.services.zevrantandroidapp.utilities.CucumberScreenCaptureProcessor;
 import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 
 import org.apache.commons.lang3.StringUtils;
@@ -50,6 +48,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import io.cucumber.core.api.Scenario;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
@@ -60,7 +59,7 @@ public class BasicSteps {
     private ActivityScenario<ZevrantServices> scenario;
     private ZevrantServices zevrantActivity;
     private static final Map<String, Object> context = new HashMap<>();
-    ;
+    private final CucumberScreenCaptureProcessor captureProcessor = new CucumberScreenCaptureProcessor();
 
     public BasicSteps() {
 
@@ -117,6 +116,18 @@ public class BasicSteps {
         assertThat(future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT), is(not(containsString("error"))));
     }
 
+    public String getFeatureFileNameFromScenarioId(Scenario scenario) {
+        String featureName = "Feature ";
+        String rawFeatureName = scenario.getId().split(";")[0].replace("-"," ");
+        featureName = featureName + rawFeatureName.substring(0, 1).toUpperCase() + rawFeatureName.substring(1);
+
+        return featureName;
+    }
+
+    private void takeScreenshot() {
+
+    }
+
     @Given("^I start the application$")
     public void iStartTheApplication() throws InterruptedException, UiObjectNotFoundException {
         assertNotNull(zevrantActivity);
@@ -143,12 +154,13 @@ public class BasicSteps {
                 password.setText(Secrets.getPassword("zevrantservices@gmail.com"));
                 next = device.findObject(new UiSelector().textStartsWith("NEXT"));
                 next.click();
-                UiObject uiObject = device.findObject(new UiSelector().textContains("agree"));
+                UiObject uiObject = device.findObject(new UiSelector().textContains("agree").clickable(true));
                 uiObject.waitForExists(30000);
-                uiObject.click();
+                assertThat("I agree button does not exist", uiObject.exists(), is(true));
+                assertThat("I agree button did not click", uiObject.click(), is(true));
                 UiObject more = device.findObject(new UiSelector().textStartsWith("MORE"));
                 more.waitForExists(3000);
-                assertThat(more.exists(), is(true));
+                assertThat("More button does not exist", more.exists(), is(true));
                 while (more.exists()) {
                     more.click();
                 }
