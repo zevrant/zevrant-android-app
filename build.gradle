@@ -39,3 +39,4 @@ task clean(type: Delete) {
         delete "$rootDir/cucumber-reports"
     }
 }
+

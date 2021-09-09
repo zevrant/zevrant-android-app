@@ -144,6 +144,7 @@ public class BasicSteps {
                 next = device.findObject(new UiSelector().textStartsWith("NEXT"));
                 next.click();
                 UiObject uiObject = device.findObject(new UiSelector().textStartsWith("I agree"));
+                uiObject.waitForExists(3000);
                 uiObject.click();
                 UiObject more = device.findObject(new UiSelector().textStartsWith("MORE"));
                 more.waitForExists(3000);
@@ -196,6 +197,7 @@ public class BasicSteps {
     public void grantCredentialsSave() throws UiObjectNotFoundException {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         UiObject allowPermission = UiDevice.getInstance(instrumentation).findObject(new UiSelector().textMatches("SAVE|save"));
+        allowPermission.waitForExists(5000);
         if (allowPermission.exists()) {
             allowPermission.click();
         } else {

@@ -57,10 +57,10 @@ public class LoginSteps {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         UiDevice device = UiDevice.getInstance(instrumentation);
         UiObject savePassword = device.findObject(new UiSelector().textContains("save").clickable(true));
-        savePassword.waitForExists(5000);
+        savePassword.waitForExists(10000);
         savePassword.click();
         device.findObject(new UiSelector().textContains("save").clickable(true));
-        savePassword.waitForExists(5000);
+        savePassword.waitForExists(10000);
         savePassword.click();
     }
     

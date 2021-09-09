@@ -95,6 +95,7 @@ android {
             minifyEnabled false
             signingConfig debug.signingConfig
             debuggable true
+
         }
 
         developTest {
@@ -114,6 +115,7 @@ android {
             signingConfig debug.signingConfig
             minifyEnabled false
         }
+
     }
 
 
@@ -181,3 +183,4 @@ task cleanRemoteReport(type: Exec) {
     ignoreExitValue true
     setIgnoreExitValue(true)
 }
+
