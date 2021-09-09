@@ -144,7 +144,7 @@ public class BasicSteps {
                 next = device.findObject(new UiSelector().textStartsWith("NEXT"));
                 next.click();
                 UiObject uiObject = device.findObject(new UiSelector().textStartsWith("I agree"));
-                uiObject.waitForExists(3000);
+                uiObject.waitForExists(10000);
                 uiObject.click();
                 UiObject more = device.findObject(new UiSelector().textStartsWith("MORE"));
                 more.waitForExists(3000);
