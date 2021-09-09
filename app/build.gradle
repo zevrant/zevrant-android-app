@@ -166,11 +166,18 @@ dependencies {
 //    androidTestImplementation "io.cucumber:cucumber-picocontainer:6.11.0"
 }
 
-cucumberReports {
-//    outputDir = file('path/for/generated/html')
-    buildId = '0'
-//    reports = files('path/to/cucumber-report.json', 'another/cucumber-json.json')
-    testTasksFinalizedByReport false
+task pullReport(type: Exec) {
+    workingDir("$rootDir")
+    String adbCommand = System.getenv("ADB_COMMAND") ?: "adb"
+    executable(adbCommand)
+    args("-a", "pull", "/sdcard/Documents/cucumber-reports")
 }
 
-
+task cleanRemoteReport(type: Exec) {
+    workingDir("$rootDir")
+    String adbCommand = System.getenv("ADB_COMMAND") ?: "adb"
+    executable(adbCommand)
+    args("shell", "rm -rf", "/sdcard/Documents/cucumber-reports")
+    ignoreExitValue true
+    setIgnoreExitValue(true)
+}

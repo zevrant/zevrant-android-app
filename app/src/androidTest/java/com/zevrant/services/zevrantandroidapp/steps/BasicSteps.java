@@ -146,6 +146,7 @@ public class BasicSteps {
                 UiObject uiObject = device.findObject(new UiSelector().textStartsWith("I agree"));
                 uiObject.click();
                 UiObject more = device.findObject(new UiSelector().textStartsWith("MORE"));
+                more.waitForExists(3000);
                 assertThat(more.exists(), is(true));
                 while (more.exists()) {
                     more.click();
