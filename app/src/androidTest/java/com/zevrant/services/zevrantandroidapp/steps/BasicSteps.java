@@ -78,7 +78,7 @@ public class BasicSteps {
     private ZevrantServices zevrantActivity;
     private static final Map<String, Object> context = new HashMap<>();
     private final CucumberScreenCaptureProcessor captureProcessor = new CucumberScreenCaptureProcessor();
-
+    private Scenario cucumberScenario;
     public BasicSteps() {
 
     }
@@ -142,41 +142,25 @@ public class BasicSteps {
 
     @AfterStep
     public void afterStep(Scenario scenario) throws IOException {
-        embedPhoto(scenario, "-after");
+        embedPhoto();
     }
 
     @BeforeStep
     public void beforeStep(Scenario scenario) throws IOException {
+        cucumberScenario = scenario;
         if(this.zevrantActivity != null) {
-            embedPhoto(scenario, "-before");
+            embedPhoto();
         }
     }
 
-    private void embedPhoto(Scenario scenario, String suffix) throws IOException {
-        String screenshotName = getFeatureFileNameFromScenarioId(scenario).concat(suffix);
-        String[] pieces = screenshotName.replaceAll(" ", "-").split("/");
-        String fileName = pieces[pieces.length - 1];
-        byte[] bytes = captureProcessor.takeScreenshot(fileName);
-
+    private void embedPhoto() throws IOException {
+        byte[] bytes = captureProcessor.takeScreenshot(null);
         assertThat(bytes.length, is(greaterThan(0)));
-
-        scenario.embed(bytes, "image/png");
-    }
-
-    public String getFeatureFileNameFromScenarioId(Scenario scenario) {
-        String featureName = "Feature ";
-        String rawFeatureName = scenario.getId().split(";")[0].replace("-"," ");
-        featureName = featureName + rawFeatureName.substring(0, 1).toUpperCase() + rawFeatureName.substring(1);
-
-        return featureName;
-    }
-
-    private void takeScreenshot() {
-
+        cucumberScenario.embed(bytes, "image/png");
     }
 
     @Given("^I start the application$")
-    public void iStartTheApplication() throws InterruptedException, UiObjectNotFoundException {
+    public void iStartTheApplication() throws InterruptedException, UiObjectNotFoundException, IOException {
         assertNotNull(zevrantActivity);
         SecretsInitializer.init();
         grantStoragePermission();
@@ -188,36 +172,46 @@ public class BasicSteps {
             Thread.sleep(2000);
             Instrumentation instrumentation = getInstrumentation();
             UiDevice device = UiDevice.getInstance(instrumentation);
+            this.embedPhoto();
             UiObject signIn = device.findObject(new UiSelector().textStartsWith("SIGN IN").clickable(true));
             if(signIn.exists()) {
                 signIn.click();
                 Thread.sleep(2000);
+                this.embedPhoto();
                 UiObject email = device.findObject(new UiSelector().className(EditText.class));
                 email.click();
                 email.setText("zevrantservices@gmail.com");
+                this.closeKeyboard();
                 UiObject next = device.findObject(new UiSelector().textStartsWith("NEXT"));
+                this.embedPhoto();
                 next.click();
-                UiObject password = device.findObject(new UiSelector().focused(true));
+                UiObject password = device.findObject(new UiSelector().className(EditText.class));
                 password.setText(Secrets.getPassword("zevrantservices@gmail.com"));
+                this.closeKeyboard();
                 next = device.findObject(new UiSelector().textStartsWith("NEXT"));
+                this.embedPhoto();
                 next.click();
                 UiObject uiObject = device.findObject(new UiSelector().textContains("agree").clickable(true));
                 uiObject.waitForExists(30000);
+                this.embedPhoto();
                 assertThat("I agree button does not exist", uiObject.exists(), is(true));
                 assertThat("I agree button did not click", uiObject.click(), is(true));
                 UiObject more = device.findObject(new UiSelector().textStartsWith("MORE"));
                 more.waitForExists(3000);
+                this.embedPhoto();
                 assertThat("More button does not exist", more.exists(), is(true));
                 while (more.exists()) {
                     more.click();
                 }
                 UiObject accept = device.findObject(new UiSelector().textStartsWith("ACCEPT"));
+                this.embedPhoto();
                 accept.click();
             }
             Intent intent = zevrantActivity.getIntent();
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getTargetContext().startActivity(intent);
             Thread.sleep(3000);
+            this.embedPhoto();
         }
     }
 

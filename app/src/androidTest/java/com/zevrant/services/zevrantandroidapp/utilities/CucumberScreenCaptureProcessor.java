@@ -36,7 +36,9 @@ public class CucumberScreenCaptureProcessor extends BasicScreenCaptureProcessor 
 
     public byte[] takeScreenshot(String screenshotName) {
         ScreenCapture capture = Screenshot.capture();
-        capture.setName(screenshotName);
+        if(screenshotName != null) {
+            capture.setName(screenshotName);
+        }
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         Bitmap.createScaledBitmap(capture.getBitmap(), 200, 400, true)
                 .compress(Bitmap.CompressFormat.PNG, 100, stream);
