@@ -126,6 +126,9 @@ public class BasicSteps {
     public void tearDown() throws CredentialsNotFoundException, ExecutionException, InterruptedException, TimeoutException, JsonProcessingException {
 //        scenario.close();
         context.clear();
+        if(CredentialsService.getCredential() == null ) {
+            return;
+        }
         if (CredentialsService.hasAuthorization()) {
             CredentialsService.getAuthorization();
         }
@@ -169,16 +172,17 @@ public class BasicSteps {
             Intent playStoreIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store"));
             playStoreIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getTargetContext().startActivity(playStoreIntent);
-            Thread.sleep(2000);
             Instrumentation instrumentation = getInstrumentation();
             UiDevice device = UiDevice.getInstance(instrumentation);
             this.embedPhoto();
             UiObject signIn = device.findObject(new UiSelector().textStartsWith("SIGN IN").clickable(true));
+            signIn.waitForExists(5000);
             if(signIn.exists()) {
                 signIn.click();
-                Thread.sleep(2000);
-                this.embedPhoto();
+
                 UiObject email = device.findObject(new UiSelector().className(EditText.class));
+                email.waitForExists(5000);
+                this.embedPhoto();
                 email.click();
                 email.setText("zevrantservices@gmail.com");
                 this.closeKeyboard();
@@ -186,6 +190,7 @@ public class BasicSteps {
                 this.embedPhoto();
                 next.click();
                 UiObject password = device.findObject(new UiSelector().className(EditText.class));
+                password.waitForExists(5000);
                 password.setText(Secrets.getPassword("zevrantservices@gmail.com"));
                 this.closeKeyboard();
                 next = device.findObject(new UiSelector().textStartsWith("NEXT"));
