@@ -19,15 +19,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ZevrantAndroidApp"
         tools:ignore="HardcodedDebugMode">
-<!--        <activity-->
-<!--            android:name=".activities.PhotoViewer"-->
-<!--            android:exported="true"-->
-<!--            android:label="@string/title_activity_photo_viewer"-->
-<!--            android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" />-->
+        <!--        <activity-->
+        <!--            android:name=".activities.PhotoViewer"-->
+        <!--            android:exported="true"-->
+        <!--            android:label="@string/title_activity_photo_viewer"-->
+        <!--            android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" />-->
         <activity
             android:name=".activities.ZevrantServices"
-            android:label="@string/title_activity_main"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/title_activity_main">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -179,7 +179,7 @@ task cleanRemoteReport(type: Exec) {
     workingDir("$rootDir")
     String adbCommand = System.getenv("ADB_COMMAND") ?: "adb"
     executable(adbCommand)
-    args("shell", "rm -rf", "/sdcard/Documents/cucumber-reports")
+    args("shell", "rm -rf", "/sdcard/Documents/cucumber-reports/*")
     ignoreExitValue true
     setIgnoreExitValue(true)
 }

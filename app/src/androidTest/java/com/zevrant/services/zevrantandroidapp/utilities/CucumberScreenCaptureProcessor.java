@@ -3,20 +3,27 @@ package com.zevrant.services.zevrantandroidapp.utilities;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
+import android.graphics.Bitmap;
+
 import androidx.test.runner.screenshot.BasicScreenCaptureProcessor;
 import androidx.test.runner.screenshot.ScreenCapture;
 import androidx.test.runner.screenshot.Screenshot;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 
 public class CucumberScreenCaptureProcessor extends BasicScreenCaptureProcessor {
 
+    private final String screenshotDir = "/sdcard/Documents/cucumber-reports/screenshots";
+
     public CucumberScreenCaptureProcessor() {
         super();
-        File screenshotDir = new File("/sdcard/Documents/cucumber-reports/screenshots");
+        File screenshotDir = new File(this.screenshotDir);
         if(!screenshotDir.exists()) {
             assertThat("Failed to make screenshot dir", screenshotDir.mkdir(), is(true));
         }
@@ -27,14 +34,16 @@ public class CucumberScreenCaptureProcessor extends BasicScreenCaptureProcessor 
         super.mDefaultScreenshotPath = screenshotDir;
     }
 
-    public void takeScreenshot(String screenshotName) {
+    public byte[] takeScreenshot(String screenshotName) {
         ScreenCapture capture = Screenshot.capture();
         capture.setName(screenshotName);
-        try {
-            this.process(capture);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("failed to take screenshot");
-        }
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        Bitmap.createScaledBitmap(capture.getBitmap(), 200, 400, true)
+                .compress(Bitmap.CompressFormat.PNG, 100, stream);
+        return stream.toByteArray();
+    }
+
+    public String getScreenshotDir() {
+        return screenshotDir;
     }
 }
