@@ -1,0 +1,12 @@
+#!/bin/bash
+nohup emulator -avd Pixel_5_API_30 -no-boot-anim -wipe-data -no-snapshot-save -no-snapshot-load > nohup.out &
+
+sleep 30
+
+set +e
+./gradlew cleanRemoteReport
+./gradlew connectedDevelopTest
+./gradlew pullReport
+
+pid=`pgrep qemu-system-x86`
+kill -9 $pid

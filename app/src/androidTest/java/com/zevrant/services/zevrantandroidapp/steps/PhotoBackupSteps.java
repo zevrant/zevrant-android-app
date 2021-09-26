@@ -172,7 +172,7 @@ public class PhotoBackupSteps {
         ObjectMapper objectMapper = new ObjectMapper();
         List<String> hashes = objectMapper.readValue(responseString, new TypeReference<List<String>>(){});
 
-        assertThat(hashes.size(), is(equalTo(1)));
-        assertThat(hashes.get(0), is(equalTo(fileHash)));
+        assertThat("File hash was not found on server", hashes.size(), is(greaterThan(0)));
+        assertThat("File has was not found", hashes.contains(fileHash), is(true));
     }
 }

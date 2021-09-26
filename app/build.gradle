@@ -43,8 +43,8 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.zevrant.services.zevrantandroidapp"
-        testApplicationId "com.zevrant.services.zevrantandroidapp.test"
+        applicationId "com.zevrant.services.zevrantandroidappsdfgsdgfsdfg"
+        testApplicationId "com.zevrant.services.zevrantandroidapp.testsdfgsdgdfg"
         minSdkVersion 30
         targetSdkVersion 30
         versionCode 1
@@ -145,10 +145,10 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.android.volley:volley:1.2.1'
     implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.4') { transitive = true }
-    implementation 'com.google.android.gms:play-services-auth:19.2.0'
     implementation "androidx.navigation:navigation-fragment:$nav_version"
     implementation "androidx.navigation:navigation-ui:$nav_version"
     implementation "ch.acra:acra-http:5.7.0"
+    implementation 'org.bouncycastle:bcprov-jdk16:1.46'
 
     testImplementation 'junit:junit:4.13.2'
 

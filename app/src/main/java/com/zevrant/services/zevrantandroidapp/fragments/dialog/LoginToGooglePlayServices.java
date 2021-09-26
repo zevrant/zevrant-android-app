@@ -15,6 +15,7 @@ import com.zevrant.services.zevrantandroidapp.R;
  * Use the {@link LoginToGooglePlayServices#newInstance} factory method to
  * create an instance of this fragment.
  */
+@Deprecated
 public class LoginToGooglePlayServices extends DialogFragment {
 
     public LoginToGooglePlayServices() {
@@ -27,6 +28,7 @@ public class LoginToGooglePlayServices extends DialogFragment {
      *
      * @return A new instance of fragment LoginToGooglePlayServices.
      */
+    @Deprecated
     public static LoginToGooglePlayServices newInstance() {
         return new LoginToGooglePlayServices();
     }

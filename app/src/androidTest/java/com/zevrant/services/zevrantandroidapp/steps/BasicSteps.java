@@ -167,7 +167,7 @@ public class BasicSteps {
         assertNotNull(zevrantActivity);
         SecretsInitializer.init();
         grantStoragePermission();
-
+        Thread.sleep(30000);
         if (CredentialsService.getCredential() == null) {
             Intent playStoreIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store"));
             playStoreIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
