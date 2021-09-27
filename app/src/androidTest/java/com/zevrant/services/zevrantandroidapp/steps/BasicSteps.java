@@ -3,6 +3,7 @@ package com.zevrant.services.zevrantandroidapp.steps;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static org.acra.ACRA.LOG_TAG;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -181,9 +182,9 @@ public class BasicSteps {
 
     @And("I verify the page transition to the home page")
     public void iVerifyThePageTransitionToLoginFormActivity() throws InterruptedException {
-        Thread.sleep(3000);
+        Thread.sleep(6000);
         onView(withId(R.id.loginButton))
-                .check(ViewAssertions.matches(ViewMatchers.isDisplayed())); //Check if the login submit button exists
+                .check(ViewAssertions.matches(withText(not(containsString(getTargetContext().getString(R.string.loginFailure)))))); //Check if login failure occurred
     }
 
     @And("^I click the home login button$")

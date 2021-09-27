@@ -59,8 +59,6 @@ public class LoginFormActivity extends Activity {
 
                     if (oAuthToken != null && StringUtils.isNotBlank(oAuthToken.getAccessToken())) {
                         try {
-                            Log.d(LOG_TAG, "SAVE USERNAME: ".concat(username));
-                            Log.d(LOG_TAG, "SAVE PASSWORD ".concat(password));
                             saveCredentials(username, password, oAuthToken);
                             String decryptedUsername = EncryptionService.getSecret(Constants.SecretNames.LOGIN_USER_NAME);
                             Log.d(LOG_TAG, "USERNAME DECRYPTION: ".concat(username).concat("==").concat(decryptedUsername));

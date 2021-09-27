@@ -25,7 +25,6 @@ public class EncryptionService {
         if(secretValue.equals(LOGIN_USER_NAME)) {
             throw new RuntimeException("Bad Credential save");
         }
-        Log.d(LOG_TAG, "Setting secret name '".concat(secretName).concat("' to '").concat(secretValue).concat("'"));
         encryptionService.setSecret(secretName, secretValue);
     }
 
