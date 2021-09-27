@@ -1,3 +1,5 @@
+
+@Photo
 Feature: Photo Backup
 Scenario Outline: I can backup photos
   Given I start the application

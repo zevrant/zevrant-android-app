@@ -4,6 +4,7 @@ import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+import static org.acra.ACRA.LOG_TAG;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -12,20 +13,16 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.util.Log;
-import android.widget.EditText;
 
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.espresso.Espresso;
 import androidx.test.espresso.assertion.ViewAssertions;
 import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.GrantPermissionRule;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
@@ -40,21 +37,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
+import com.zevrant.services.zevrantandroidapp.pojo.OAuthToken;
 import com.zevrant.services.zevrantandroidapp.secrets.Secrets;
 import com.zevrant.services.zevrantandroidapp.secrets.SecretsInitializer;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.CleanupService;
-import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
+import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
+import com.zevrant.services.zevrantandroidapp.services.NoOpEncryptionService;
+import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.utilities.CucumberScreenCaptureProcessor;
 import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -70,15 +65,15 @@ import io.cucumber.java.Before;
 import io.cucumber.java.BeforeStep;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
-import kotlin.jvm.JvmField;
 
 public class BasicSteps {
 
-    private ActivityScenario<ZevrantServices> scenario;
-    private ZevrantServices zevrantActivity;
     private static final Map<String, Object> context = new HashMap<>();
     private final CucumberScreenCaptureProcessor captureProcessor = new CucumberScreenCaptureProcessor();
+    private ActivityScenario<ZevrantServices> scenario;
+    private ZevrantServices zevrantActivity;
     private Scenario cucumberScenario;
+
     public BasicSteps() {
 
     }
@@ -99,12 +94,22 @@ public class BasicSteps {
         return getInstrumentation().getContext();
     }
 
+    public static String getPasswordByUsername(String username) {
+        String password = Secrets.getPassword(username);
+        if (StringUtils.isBlank(password)) {
+            throw new RuntimeException("Password for requested username ".concat(username).concat(" does not exist!!!"));
+        }
+        return password;
+    }
+
     public ZevrantServices getZevrantActivity() {
         return zevrantActivity;
     }
 
     @Before
     public void setup() {
+        EncryptionService.init(new NoOpEncryptionService());
+        Log.d(LOG_TAG, "Starting Application");
         scenario = ActivityScenario.launch(ZevrantServices.class);
 
         scenario.onActivity((activity) -> {
@@ -124,21 +129,17 @@ public class BasicSteps {
 
     @After
     public void tearDown() throws CredentialsNotFoundException, ExecutionException, InterruptedException, TimeoutException, JsonProcessingException {
-//        scenario.close();
-        context.clear();
-        if(CredentialsService.getCredential() == null ) {
-            return;
-        }
-        if (CredentialsService.hasAuthorization()) {
-            CredentialsService.getAuthorization();
-        }
-        Future<String> future = CleanupService.eraseBackups(CredentialsService.getAuthorization());
+        //Cannot access runtime values after app has already stopped even if stored in static context,
+        //this includes oauth token and values stored in SharedPreferences
+        OAuthToken oAuthToken = new ObjectMapper().readValue(OAuthService.login("test-admin", Secrets.getPassword("test-admin")).get(), OAuthToken.class);
+        Future<String> future = CleanupService.eraseBackups(oAuthToken.getAccessToken());
         assertThat(future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT), is(not(containsString("error"))));
         future =
-                BackupService.getAlllHashes(CredentialsService.getAuthorization());
+                BackupService.getAlllHashes(oAuthToken.getAccessToken());
         String responseString = future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
         ObjectMapper objectMapper = new ObjectMapper();
-        List<String> hashes = objectMapper.readValue(responseString, new TypeReference<List<String>>(){});
+        List<String> hashes = objectMapper.readValue(responseString, new TypeReference<List<String>>() {
+        });
         assertThat("Failed to delete hashes", hashes.size(), is(0));
 
     }
@@ -151,7 +152,7 @@ public class BasicSteps {
     @BeforeStep
     public void beforeStep(Scenario scenario) throws IOException {
         cucumberScenario = scenario;
-        if(this.zevrantActivity != null) {
+        if (this.zevrantActivity != null) {
             embedPhoto();
         }
     }
@@ -166,58 +167,10 @@ public class BasicSteps {
     public void iStartTheApplication() throws InterruptedException, UiObjectNotFoundException, IOException {
         assertNotNull(zevrantActivity);
         SecretsInitializer.init();
+        EncryptionService.init(new NoOpEncryptionService());
         grantStoragePermission();
         Thread.sleep(30000);
-        if (CredentialsService.getCredential() == null) {
-            Intent playStoreIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store"));
-            playStoreIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            getTargetContext().startActivity(playStoreIntent);
-            Instrumentation instrumentation = getInstrumentation();
-            UiDevice device = UiDevice.getInstance(instrumentation);
-            this.embedPhoto();
-            UiObject signIn = device.findObject(new UiSelector().textStartsWith("SIGN IN").clickable(true));
-            signIn.waitForExists(5000);
-            if(signIn.exists()) {
-                signIn.click();
-
-                UiObject email = device.findObject(new UiSelector().className(EditText.class));
-                email.waitForExists(5000);
-                this.embedPhoto();
-                email.click();
-                email.setText("zevrantservices@gmail.com");
-                this.closeKeyboard();
-                UiObject next = device.findObject(new UiSelector().textStartsWith("NEXT"));
-                this.embedPhoto();
-                next.click();
-                UiObject password = device.findObject(new UiSelector().className(EditText.class));
-                password.waitForExists(5000);
-                password.setText(Secrets.getPassword("zevrantservices@gmail.com"));
-                this.closeKeyboard();
-                next = device.findObject(new UiSelector().textStartsWith("NEXT"));
-                this.embedPhoto();
-                next.click();
-                UiObject uiObject = device.findObject(new UiSelector().textContains("agree").clickable(true));
-                uiObject.waitForExists(30000);
-                this.embedPhoto();
-                assertThat("I agree button does not exist", uiObject.exists(), is(true));
-                assertThat("I agree button did not click", uiObject.click(), is(true));
-                UiObject more = device.findObject(new UiSelector().textStartsWith("MORE"));
-                more.waitForExists(3000);
-                this.embedPhoto();
-                assertThat("More button does not exist", more.exists(), is(true));
-                while (more.exists()) {
-                    more.click();
-                }
-                UiObject accept = device.findObject(new UiSelector().textStartsWith("ACCEPT"));
-                this.embedPhoto();
-                accept.click();
-            }
-            Intent intent = zevrantActivity.getIntent();
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            getTargetContext().startActivity(intent);
-            Thread.sleep(3000);
-            this.embedPhoto();
-        }
+        this.embedPhoto();
     }
 
     @And("I verify the page transition to the login page")
@@ -242,38 +195,16 @@ public class BasicSteps {
     @And("^I grant permission to access storage")
     public void grantStoragePermission() throws UiObjectNotFoundException {
         Instrumentation instrumentation = getInstrumentation();
-        UiObject allowPermission = UiDevice.getInstance(instrumentation).findObject(new UiSelector().text("Allow"));
-        allowPermission.waitForExists(3000);
+        UiObject allowPermission = UiDevice.getInstance(instrumentation).findObject(new UiSelector().textMatches("Allow|ALLOW|allow"));
+        allowPermission.waitForExists(10000);
         if (allowPermission.exists()) {
             allowPermission.click();
-        } else {
-            fail("unable to find permission request menu button");
-        }
-    }
-
-    @And("^I grant permission to save credentials")
-    public void grantCredentialsSave() throws UiObjectNotFoundException {
-        Instrumentation instrumentation = getInstrumentation();
-        UiObject allowPermission = UiDevice.getInstance(instrumentation).findObject(new UiSelector().textMatches("SAVE|save"));
-        allowPermission.waitForExists(5000);
-        if (allowPermission.exists()) {
-            allowPermission.click();
-        } else {
-            fail("unable to find permission request menu button");
         }
     }
 
     @And("^I close the keyboard$")
     public void closeKeyboard() {
         Espresso.closeSoftKeyboard();
-    }
-
-    public static String getPasswordByUsername(String username) {
-        String password = Secrets.getPassword(username);
-        if (StringUtils.isBlank(password)) {
-            throw new RuntimeException("Password for requested username ".concat(username).concat(" does not exist!!!"));
-        }
-        return password;
     }
 
 }

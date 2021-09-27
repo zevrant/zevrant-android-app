@@ -1,6 +1,9 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
+import static org.acra.ACRA.LOG_TAG;
+
 import android.content.Context;
+import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.RetryPolicy;
@@ -10,16 +13,12 @@ import com.zevrant.services.zevrantandroidapp.pojo.BackupFileRequest;
 import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
 import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public class BackupService {
 
     private static String backupUrl;
-    private static final Logger logger = LoggerFactory.getLogger(BackupService.class);
 
     public static void init(Context context) {
         backupUrl = context.getString(R.string.backup_base_url);
@@ -40,8 +39,8 @@ public class BackupService {
     public static Future<String> backupFile(BackupFileRequest backupFileRequest, String authorization) {
 
         CompletableFuture<String> future = new CompletableFuture<>();
-        logger.info("Backing up file to {}", backupUrl.concat("/file-backup"));
-        logger.info(JsonParser.writeValueAsString(backupFileRequest));
+        Log.i(LOG_TAG, "Backing up file to ".concat(backupUrl.concat("/file-backup")));
+        Log.i(LOG_TAG, JsonParser.writeValueAsString(backupFileRequest));
         StringRequest request = new StringRequest(Request.Method.PUT,
                 backupUrl.concat("/file-backup"),
                 JsonParser.writeValueAsString(backupFileRequest),

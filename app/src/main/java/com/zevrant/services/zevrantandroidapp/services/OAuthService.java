@@ -1,6 +1,9 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
+import static org.acra.ACRA.LOG_TAG;
+
 import android.content.Context;
+import android.util.Log;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -8,15 +11,10 @@ import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.pojo.OAuthTokenRequest;
 import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public class OAuthService {
-
-    private static final Logger logger = LoggerFactory.getLogger(OAuthService.class);
 
     private static String oauthUrl;
 
@@ -25,7 +23,7 @@ public class OAuthService {
     }
 
     public static void login(String username, String password, Response.Listener<String> responseListener) {
-        logger.info("requesting token from {}", oauthUrl.concat("/oauth/token"));
+        Log.i(LOG_TAG, "requesting token from ".concat(oauthUrl.concat("/oauth/token")));
         OAuthTokenRequest tokenRequest = new OAuthTokenRequest();
         tokenRequest.setClientId(username);
         tokenRequest.setClientSecret(password);
@@ -41,13 +39,18 @@ public class OAuthService {
     }
 
     public static Future<String> login(String username, String password) {
+        if(username.equals("loginUserName")) {
+            throw new RuntimeException("BAD USERNAME");
+        }
         CompletableFuture<String> future = new CompletableFuture<>();
-        logger.info("requesting token from {}", oauthUrl.concat("/oauth/token"));
+        Log.i(LOG_TAG, "requesting token from ".concat(oauthUrl.concat("/oauth/token")));
         OAuthTokenRequest tokenRequest = new OAuthTokenRequest();
         tokenRequest.setClientId(username);
         tokenRequest.setClientSecret(password);
         tokenRequest.setGrantType("client_credentials");
         tokenRequest.setScope("DEFAULT");
+
+        Log.v(LOG_TAG, JsonParser.writeValueAsString(tokenRequest));
         StringRequest request = new StringRequest(Request.Method.POST,
                 oauthUrl.concat("/oauth/token"),
                 JsonParser.writeValueAsString(tokenRequest),

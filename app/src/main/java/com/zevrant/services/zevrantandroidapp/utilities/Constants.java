@@ -1,6 +1,9 @@
 package com.zevrant.services.zevrantandroidapp.utilities;
 
 public class Constants {
+
+    private static final String LOG_TAG = "ZevrantServices";
+
     public static class JobTags {
         public static final String BACKUP_TAG = "BACKUP";
         public static final String UPDATE_TAG = "UPDATE";

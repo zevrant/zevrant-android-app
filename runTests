@@ -5,8 +5,21 @@ sleep 30
 
 set +e
 ./gradlew cleanRemoteReport
+if [ ! -z "$1" ]; then 
+	echo "setting tags to $1"
+	./gradlew setTags -Ptags="$1"
+else
+	echo "no tags detected"	
+fi
 ./gradlew connectedDevelopTest
+nohup adb logcat | grep "ACRA" > test-logs.log & 
 ./gradlew pullReport
+
+
+ if [ "$?" != "0" ]; then
+	cat test-logs.log
+fi
 
 pid=`pgrep qemu-system-x86`
 kill -9 $pid
+

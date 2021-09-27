@@ -43,8 +43,8 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.zevrant.services.zevrantandroidappsdfgsdgfsdfg"
-        testApplicationId "com.zevrant.services.zevrantandroidapp.testsdfgsdgdfg"
+        applicationId "com.zevrant.services.zevrantandroidapp"
+        testApplicationId "com.zevrant.services.zevrantandroidapp.test"
         minSdkVersion 30
         targetSdkVersion 30
         versionCode 1
@@ -140,7 +140,6 @@ dependencies {
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'com.google.android.material:material:1.4.0'
-    implementation 'org.slf4j:slf4j-android:1.7.32'
     implementation "androidx.work:work-runtime:$workVersion"
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.android.volley:volley:1.2.1'
@@ -175,6 +174,12 @@ task pullReport(type: Exec) {
     args("-a", "pull", "/sdcard/Documents/cucumber-reports")
 }
 
+task clearTags(type: Exec) {
+    workingDir("$rootDir/app")
+    executable("sed")
+    args("-i", "s/tags = \".*\"/tags = \"\"/g", "src/androidTest/java/com/zevrant/services/zevrantandroidapp/test/CucumberTestCase.java")
+}
+
 task cleanRemoteReport(type: Exec) {
     workingDir("$rootDir")
     String adbCommand = System.getenv("ADB_COMMAND") ?: "adb"
@@ -182,5 +187,19 @@ task cleanRemoteReport(type: Exec) {
     args("shell", "rm -rf", "/sdcard/Documents/cucumber-reports/*")
     ignoreExitValue true
     setIgnoreExitValue(true)
+    finalizedBy(tasks.clearTags)
 }
 
+task setTags(type: Exec) {
+    workingDir("$rootDir/app")
+    executable("sed")
+    String tagListString = ""
+    if(project.hasProperty("tags")) {
+        String[] tagsArray = project.tags.split(",")
+        for(String tag : tagsArray) {
+            tagListString = tagListString.concat(tag).concat(",")
+        }
+        tagListString = tagListString.substring(0, tagListString.length() - 1).trim()
+    }
+    args("-i", "s/tags = \".*\"/tags = \"$tagListString\"/g", "src/androidTest/java/com/zevrant/services/zevrantandroidapp/test/CucumberTestCase.java")
+}

@@ -37,8 +37,8 @@ public class JobUtilities {
     }
 
     public static void schedulePeriodicJob(Context context, Class<? extends ListenableWorker> jobClass,
-                                                Constraints constraints, String tag, Data data) {
-        schedulePeriodicJob(context,jobClass, constraints, tag, data, 1L, TimeUnit.HOURS);
+                                           Constraints constraints, String tag, Data data) {
+        schedulePeriodicJob(context, jobClass, constraints, tag, data, 1L, TimeUnit.HOURS);
     }
 
     public static void schedulePeriodicJob(Context context, Class<? extends ListenableWorker> jobClass,
@@ -59,7 +59,7 @@ public class JobUtilities {
 
     public static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
-        for ( int j = 0; j < bytes.length; j++ ) {
+        for (int j = 0; j < bytes.length; j++) {
             int v = bytes[j] & 0xFF;
             hexChars[j * 2] = hexArray[v >>> 4];
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];

@@ -4,16 +4,11 @@ import androidx.annotation.Nullable;
 
 import com.android.volley.Response;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 public class StringRequest extends com.android.volley.toolbox.StringRequest {
-
-    private static final Logger logger = LoggerFactory.getLogger(StringRequest.class);
 
     private final Map<String, String> headers;
     private final Map<String, String> params;
@@ -34,13 +29,12 @@ public class StringRequest extends com.android.volley.toolbox.StringRequest {
 
     @Override
     public byte[] getBody() {
-        if(this.body != null) {
+        if (this.body != null) {
             return this.body.getBytes(StandardCharsets.UTF_8);
-        }
-        else return null;
+        } else return null;
     }
 
-    public void setHeader(String key, String value){
+    public void setHeader(String key, String value) {
         headers.put(key, value);
     }
 
@@ -66,4 +60,4 @@ public class StringRequest extends com.android.volley.toolbox.StringRequest {
     public void setOAuthToken(String token) {
         headers.put("Authorization", "bearer ".concat(token));
     }
- }
+}

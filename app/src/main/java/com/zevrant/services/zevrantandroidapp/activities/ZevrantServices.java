@@ -1,11 +1,14 @@
 package com.zevrant.services.zevrantandroidapp.activities;
 
+import static org.acra.ACRA.LOG_TAG;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.autofill.AutofillManager;
@@ -22,6 +25,7 @@ import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
 import com.zevrant.services.zevrantandroidapp.jobs.UpdateJob;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
+import com.zevrant.services.zevrantandroidapp.services.EncryptionServiceImpl;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.services.RequestQueueService;
 import com.zevrant.services.zevrantandroidapp.services.UpdateService;
@@ -30,15 +34,11 @@ import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 
 import org.acra.ACRA;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class ZevrantServices extends Activity {
-
-    private static final Logger logger = LoggerFactory.getLogger(ZevrantServices.class);
 
     private Button loginButton;
     private BottomAppBar bottomAppBar;
@@ -57,8 +57,6 @@ public class ZevrantServices extends Activity {
     }
 
     private void checkPermissions() {
-        logger.info("{}", ContextCompat.checkSelfPermission(
-                getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE));
         if (ContextCompat.checkSelfPermission(
                 getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE) !=
                 PackageManager.PERMISSION_GRANTED) {
@@ -80,7 +78,7 @@ public class ZevrantServices extends Activity {
 
     public void initServices(Context context) {
         try {
-            EncryptionService.init(context);
+            EncryptionService.init(new EncryptionServiceImpl(context));
             RequestQueueService.init(getFilesDir());
             OAuthService.init(context);
             BackupService.init(context);
@@ -88,7 +86,7 @@ public class ZevrantServices extends Activity {
             UpdateService.init(context);
 
         } catch (IOException ex) {
-            logger.error(ex.getMessage() + ExceptionUtils.getStackTrace(ex));
+            Log.e(LOG_TAG, ex.getMessage() + ExceptionUtils.getStackTrace(ex));
             ACRA.getErrorReporter().handleSilentException(ex);
 
         }

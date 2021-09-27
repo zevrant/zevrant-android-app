@@ -9,13 +9,8 @@ import androidx.test.runner.screenshot.BasicScreenCaptureProcessor;
 import androidx.test.runner.screenshot.ScreenCapture;
 import androidx.test.runner.screenshot.Screenshot;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
 
 public class CucumberScreenCaptureProcessor extends BasicScreenCaptureProcessor {
 

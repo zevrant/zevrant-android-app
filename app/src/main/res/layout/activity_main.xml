@@ -18,8 +18,8 @@
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        tools:visibility="visible"
-        tools:ignore="BottomAppBar">
+        tools:ignore="BottomAppBar"
+        tools:visibility="visible">
 
         <Button
             android:id="@+id/loginButton"

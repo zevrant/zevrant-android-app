@@ -1,9 +1,8 @@
 package com.zevrant.services.zevrantandroidapp.steps;
 
+import static org.acra.ACRA.LOG_TAG;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
 import android.content.ContentUris;
@@ -15,15 +14,11 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import androidx.work.Constraints;
-import androidx.work.Data;
 import androidx.work.ListenableWorker;
-import androidx.work.WorkInfo;
-import androidx.work.WorkManager;
-import androidx.work.testing.TestDriver;
 import androidx.work.testing.TestListenableWorkerBuilder;
-import androidx.work.testing.WorkManagerTestInitHelper;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,16 +28,11 @@ import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
 import com.zevrant.services.zevrantandroidapp.pojo.FileInfo;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
-import com.zevrant.services.zevrantandroidapp.utilities.Constants;
-import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,7 +42,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -62,8 +51,6 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Then;
 
 public class PhotoBackupSteps {
-
-    private static final Logger logger = LoggerFactory.getLogger(PhotoBackupSteps.class);
 
     private void addToList(byte[] bytes, List<Byte> bytesList) {
         for (byte aByte : bytes) {
@@ -130,7 +117,7 @@ public class PhotoBackupSteps {
             assertThat("Media Query Returned No Results", cursor.getCount(), is(greaterThan(0)));
             assertThat("Column Count less than or equal to zero", cursor.getColumnCount(), is(greaterThan(0)));
             int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
-            logger.info("Id column is {}", idColumn);
+            Log.i(LOG_TAG, "Id column is ".concat(String.valueOf(idColumn)));
             assertThat("Negative column value", idColumn, is(greaterThan(-1)));
             long id = cursor.getLong(idColumn);
 
@@ -150,10 +137,7 @@ public class PhotoBackupSteps {
     @Then("^I run the photo backup service$")
     public void startBackupService() throws ExecutionException, InterruptedException, TimeoutException {
         Context context = BasicSteps.getTargetContext();
-        Constraints constraints = new Constraints.Builder()
-                .setTriggerContentMaxDelay(0, TimeUnit.SECONDS)
-                .build();
-
+        assertThat(CredentialsService.hasAuthorization(), is(true));
         ListenableWorker.Result result = TestListenableWorkerBuilder.from(context, PhotoBackup.class)
                 .build().startWork()
                 .get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
