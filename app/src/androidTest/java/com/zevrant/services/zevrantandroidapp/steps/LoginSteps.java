@@ -5,6 +5,7 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.typeText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.isEnabled;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,6 +41,9 @@ public class LoginSteps {
     @When("^I click the login button$")
     public void clickLoginButton() throws UiObjectNotFoundException {
         onView(withId(R.id.LoginFormSubmitButton))
+                .check(ViewAssertions.matches(ViewMatchers.isDisplayed()))
+                .check(ViewAssertions.matches(ViewMatchers.isEnabled()))
+                .check(ViewAssertions.matches(ViewMatchers.isClickable()))
                 .perform(click());
     }
 
