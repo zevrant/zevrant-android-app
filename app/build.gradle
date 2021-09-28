@@ -11,7 +11,7 @@ if(project.hasProperty('projVersion')) {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 29
     buildToolsVersion "30.0.3"
 
     defaultConfig {
