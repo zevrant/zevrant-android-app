@@ -19,59 +19,81 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.UnrecoverableKeyException;
+import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.AlgorithmParameterSpec;
+import java.util.Objects;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-public class EncryptionServiceImpl implements EncryptionServiceContract{
+public class EncryptionServiceImpl implements EncryptionServiceContract {
 
 
     private static final String RSA_ALIAS = "rsaKey";
     private static final String PADDING = "RSA/ECB/PKCS1Padding";
+//    private static final String PADDING = "RSA/ECB/OAEPWithSHA1AndMGF1Padding";
+//    private static final String PADDING = "RSA/ECB/OAEPWithSHA-1andMGF1Padding";
+
+
     private static KeyStore keyStore;
     private static SharedPreferences sharedPreferences;
 
     public EncryptionServiceImpl(Context context) {
         try {
             sharedPreferences = context.getSharedPreferences("zevrant-services-preferences", Context.MODE_PRIVATE);
-            keyStore = KeyStore.getInstance("AndroidKeyStore");
-            keyStore.load(null);
-            if (!keyStore.containsAlias(RSA_ALIAS)) {
-                Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-
-                KeyGenParameterSpec spec = new KeyGenParameterSpec.Builder(RSA_ALIAS, KeyProperties.PURPOSE_DECRYPT)
-                        .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
-                        .setKeySize(4096)
-                        .build();
-
-                KeyPairGenerator generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
-                generator.initialize(spec);
-
-                SecureRandom random = SecureRandom.getInstanceStrong();
-                generator.generateKeyPair();
-
-                assert keyStore.containsAlias(RSA_ALIAS);
+            try {
+                keyStore = KeyStore.getInstance("AndroidKeyStore");
+            } catch (KeyStoreException ex) {
+                if (Objects.requireNonNull(ex.getMessage()).contains("AndroidKeyStore KeyStore not available")) {
+                    keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+                }
             }
-        } catch (NoSuchAlgorithmException | NoSuchProviderException | CertificateException | KeyStoreException | IOException | InvalidAlgorithmParameterException e) {
+
+            keyStore.load(null);
+        } catch (IOException | CertificateException | NoSuchAlgorithmException | KeyStoreException e) {
+            e.printStackTrace();
+            Log.e(LOG_TAG, ExceptionUtils.getStackTrace(e));
+            ACRA.getErrorReporter().handleSilentException(e);
+            throw new RuntimeException("Failed to initialize encryption service, authentication at this time is unavailable");
+        }
+    }
+
+    public void createKeys() {
+        try {
+            if (!keyStore.containsAlias(RSA_ALIAS)) {
+                KeyPairGenerator kpGenerator = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
+                AlgorithmParameterSpec spec = null;
+                spec = new KeyGenParameterSpec.Builder(RSA_ALIAS,
+                        KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT)
+                        .setDigests(KeyProperties.DIGEST_SHA512)
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1)
+                        .setRandomizedEncryptionRequired(false)
+                        .build();
+                kpGenerator.initialize(spec);
+                KeyPair kp = kpGenerator.generateKeyPair();
+
+                assert keyStore.containsAlias(RSA_ALIAS) : "Keys were created but not stored in the keystore";
+                String test = new String("test".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+                setSecret("test", test);
+                String decryptionTest = getSecret(test).trim();
+                assert decryptionTest.equals(test) : "Decryption/Encryption Test failed";
+            }
+        } catch (NoSuchAlgorithmException | NoSuchProviderException | KeyStoreException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
             RuntimeException rex = new RuntimeException(e.getMessage());
             rex.setStackTrace(e.getStackTrace());
             throw rex;
         }
-
     }
 
     //You cannot access private key from tests only in the application
@@ -79,17 +101,19 @@ public class EncryptionServiceImpl implements EncryptionServiceContract{
 
         try {
             String encryptedSecret = getEncryptedSecret(secretName);
-            checkInit();
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(RSA_ALIAS, "".toCharArray());
-            final Cipher cipher = Cipher.getInstance(PADDING);
-            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            encryptedSecret = encryptedSecret.replace("/n", "").replace("\\n", "");
 
-            return new String(
-                    cipher.doFinal(
-                            Base64.decode(encryptedSecret, Base64.DEFAULT)), StandardCharsets.UTF_8);
-        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException |
-                NoSuchPaddingException | InvalidKeyException | CredentialsNotFoundException |
-                BadPaddingException | IllegalBlockSizeException e) {
+            checkInit();
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null);
+            KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(RSA_ALIAS, null);
+            Cipher cipher = null;
+//            cipher = Cipher.getInstance("RSA/ECB/NoPadding");
+            cipher = Cipher.getInstance(PADDING);
+            cipher.init(Cipher.DECRYPT_MODE, entry.getPrivateKey());
+            byte[] decryptedBytes = cipher.doFinal(Base64.decode(encryptedSecret, Base64.DEFAULT));
+            return new String(decryptedBytes, StandardCharsets.UTF_8);
+        } catch (NoSuchAlgorithmException | KeyStoreException | NoSuchPaddingException | InvalidKeyException | CredentialsNotFoundException | BadPaddingException | IllegalBlockSizeException | CertificateException | IOException | UnrecoverableEntryException e) {
             Log.e(LOG_TAG, ExceptionUtils.getStackTrace(e));
             ACRA.getErrorReporter().handleSilentException(e);
             RuntimeException runtimeException = new RuntimeException(e.getMessage());
@@ -100,7 +124,7 @@ public class EncryptionServiceImpl implements EncryptionServiceContract{
 
     private static void checkInit() {
         try {
-            if(!keyStore.containsAlias(RSA_ALIAS)) {
+            if (!keyStore.containsAlias(RSA_ALIAS)) {
                 throw new RuntimeException("EncryptionService not initialized");
             }
         } catch (KeyStoreException e) {
@@ -118,9 +142,14 @@ public class EncryptionServiceImpl implements EncryptionServiceContract{
 
     public void setSecret(String secretName, String secretValue) {
         try {
-            PublicKey publicRsaKey = keyStore.getCertificate(RSA_ALIAS).getPublicKey();
-            Cipher cipher = Cipher.getInstance(PADDING);
-            cipher.init(Cipher.ENCRYPT_MODE, publicRsaKey);
+            KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+            keyStore.load(null);
+            KeyStore.PrivateKeyEntry entry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(RSA_ALIAS, null);
+            Cipher cipher = null;
+            RSAPublicKey pubKey = (RSAPublicKey) entry.getCertificate().getPublicKey();
+//            cipher = Cipher.getInstance("RSA/ECB/NoPadding");
+            cipher = Cipher.getInstance(PADDING);
+            cipher.init(Cipher.ENCRYPT_MODE, pubKey);
             String encryptedSecret = Base64.encodeToString(cipher.doFinal(secretValue.getBytes(StandardCharsets.UTF_8)), Base64.DEFAULT);
             sharedPreferences.edit()
                     .putString(secretName, encryptedSecret)
@@ -130,6 +159,8 @@ public class EncryptionServiceImpl implements EncryptionServiceContract{
             RuntimeException runtimeException = new RuntimeException(e.getMessage());
             runtimeException.setStackTrace(e.getStackTrace());
             throw runtimeException;
+        } catch (CertificateException | IOException | UnrecoverableEntryException e) {
+            e.printStackTrace();
         }
     }
 

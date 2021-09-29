@@ -1,22 +1,27 @@
 #!/bin/bash
+set -x
 nohup emulator -avd Pixel_5_API_30 -no-boot-anim -wipe-data -no-snapshot-save -no-snapshot-load > nohup.out &
 
 sleep 30
 
 set +e
 ./gradlew cleanRemoteReport
-if [ ! -z "$1" ]; then 
+set +x
+if [ ! -z "$1" ]; then
 	echo "setting tags to $1"
+	set -x
 	./gradlew setTags -Ptags="$1"
+	set +x
 else
 	echo "no tags detected"	
 fi
-./gradlew connectedDevelopTest
+set -x
+./gradlew clean connectedDevelopTest
 nohup adb logcat | grep "ACRA" > test-logs.log & 
 ./gradlew pullReport
 
-
- if [ "$?" != "0" ]; then
+set +x
+if [ "$?" != "0" ]; then
 	cat test-logs.log
 fi
 

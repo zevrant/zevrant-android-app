@@ -91,7 +91,7 @@ public class UpdateJob extends ListenableWorker {
         String updateResponse = updateResponseFuture.get();
         Log.i(LOG_TAG, "Update response received ".concat(updateResponse));
         UpdateCheckResponse updateCheckResponse = JsonParser.readValueFromString(updateResponse, UpdateCheckResponse.class);
-        assert updateCheckResponse != null;
+        assert updateCheckResponse != null : "null value returned for update check response";
         return updateCheckResponse;
     }
 
@@ -103,7 +103,7 @@ public class UpdateJob extends ListenableWorker {
             ACRA.getErrorReporter().handleSilentException(e);
             mFuture.setException(e);
         }
-        assert pInfo != null;
+        assert pInfo != null : "failed to retrieve version info from package manager";
         return pInfo.versionName;
     }
 

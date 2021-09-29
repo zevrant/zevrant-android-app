@@ -54,6 +54,7 @@ public class LoginFormActivity extends Activity {
 
             new Thread(() -> {
                 OAuthToken oAuthToken = null;
+                boolean exceptionOccured = false;
                 try {
                     oAuthToken = JsonParser.readValueFromString(future.get(), OAuthToken.class);
 
@@ -68,6 +69,7 @@ public class LoginFormActivity extends Activity {
                         } catch (Exception ex) {
                             Log.e(LOG_TAG, ExceptionUtils.getStackTrace(ex));
                             ACRA.getErrorReporter().handleSilentException(ex);
+                            exceptionOccured = true;
                         }
                     }
                 } catch (ExecutionException | InterruptedException e) {
@@ -77,7 +79,7 @@ public class LoginFormActivity extends Activity {
                 } finally {
                     stopLoadingIcon();
                     View rootView = findViewById(android.R.id.content);
-                    if (oAuthToken != null) {
+                    if (!exceptionOccured && oAuthToken != null) {
                         Intent intent = new Intent(this, ZevrantServices.class);
                         startActivity(intent);
                     } else {

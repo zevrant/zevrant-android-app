@@ -63,9 +63,9 @@ public class CredentialsService {
             Future<String> responseFuture = OAuthService.login(credential.getUsername(), credential.getPassword());
             response = responseFuture.get();
             oAuthToken = JsonParser.readValueFromString(response, OAuthToken.class);
-            assert oAuthToken != null;
-            assert oAuthToken.getExpiresIn() > 0;
-            assert StringUtils.isNotBlank(oAuthToken.getAccessToken());
+            assert oAuthToken != null : "failed to retrieve new oauth token";
+            assert oAuthToken.getExpiresIn() > 0 : "retrieved an expired oauth token";
+            assert StringUtils.isNotBlank(oAuthToken.getAccessToken()) : "retrieved oauth token without a token string";
             expiresAt = LocalDateTime.now().plusSeconds(oAuthToken.getExpiresIn() - 2);
         } catch (ExecutionException | InterruptedException | CredentialsNotFoundException e) {
             Log.e(LOG_TAG, ExceptionUtils.getStackTrace(e));
@@ -73,7 +73,7 @@ public class CredentialsService {
             runtimeException.setStackTrace(e.getStackTrace());
             throw runtimeException;
         } catch (AssertionError ex) {
-            assert response != null;
+            assert StringUtils.isNotBlank(response): "retrieved empty response for new oauth token";
             throw new RuntimeException("Request for token Failed, response body is: \n ".concat(response));
         }
     }

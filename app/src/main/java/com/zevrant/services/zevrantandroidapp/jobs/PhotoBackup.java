@@ -102,8 +102,8 @@ public class PhotoBackup extends ListenableWorker {
         String authorization = CredentialsService.getAuthorization();
         Future<String> checkExistenceResponse = BackupService.checkExistence(new CheckExistence(fileInfoList), authorization);
         CheckExistence existence = JsonParser.readValueFromString(checkExistenceResponse.get(), CheckExistence.class);
-        assert existence != null;
-        assert existence.getFileInfos() != null;
+        assert existence != null : "null value returned from existence check for photo backup";
+        assert existence.getFileInfos() != null : "null was returned for list of fileinfos in photobackup";
         Log.i(LOG_TAG, "Successfully checked existence of file hashes ".concat(String.valueOf(existence.getFileInfos().size()).concat(" files were not found on backup server")));
         List<FileInfo> fileInfos = existence.getFileInfos();
         for (int i = 0; i < fileInfos.size(); i++) {
@@ -139,7 +139,7 @@ public class PhotoBackup extends ListenableWorker {
         byte[] bytes = new byte[(int) fileInfo.getSize()];
         int read = is.read(bytes);
         Log.i(LOG_TAG, String.valueOf(read));
-        assert read == fileInfo.getSize();
+        assert read == fileInfo.getSize() : "failed to read entire contents of file in photo backup";
         return bytes;
     }
 

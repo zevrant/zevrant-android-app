@@ -17,6 +17,11 @@ public class NoOpEncryptionService implements EncryptionServiceContract {
             return sharedPreferences.get(secretName);
     }
 
+    @Override
+    public void createKeys() {
+        //no op
+    }
+
     public void setSecret(String secretName, String secretValue) {
             sharedPreferences.put(secretName, secretValue);
     }

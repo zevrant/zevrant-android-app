@@ -109,7 +109,7 @@ public class BasicSteps {
 
     @Before
     public void setup() {
-        EncryptionService.init(new NoOpEncryptionService());
+//        EncryptionService.init(new NoOpEncryptionService());
         Log.d(LOG_TAG, "Starting Application");
         scenario = ActivityScenario.launch(ZevrantServices.class);
 
@@ -168,7 +168,7 @@ public class BasicSteps {
     public void iStartTheApplication() throws InterruptedException, UiObjectNotFoundException, IOException {
         assertNotNull(zevrantActivity);
         SecretsInitializer.init();
-        EncryptionService.init(new NoOpEncryptionService());
+//        EncryptionService.init(new NoOpEncryptionService());
         grantStoragePermission();
         Thread.sleep(30000);
         this.embedPhoto();
