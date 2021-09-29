@@ -1,3 +1,6 @@
+
+String branchName = (BRANCH_NAME.startsWith('PR-')) ? CHANGE_BRANCH : BRANCH_NAME
+
 pipeline {
     agent {
         label 'master'
@@ -11,7 +14,7 @@ pipeline {
                             propagate: true,
                             wait: true,
                             parameters: [
-                                    [$class: 'StringParameterValue', name: 'BRANCHNAME', value: env.BRANCH_NAME],
+                                    [$class: 'StringParameterValue', name: 'BRANCH_NAME', value: branchName],
                             ]
                     )
                 }

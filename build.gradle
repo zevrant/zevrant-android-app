@@ -35,4 +35,8 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+    if (new File("$rootDir/cucumber-reports").exists()) {
+        delete "$rootDir/cucumber-reports"
+    }
 }
+

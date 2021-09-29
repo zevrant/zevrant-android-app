@@ -1,31 +1,81 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
-import com.google.android.gms.auth.api.credentials.Credential;
-import com.zevrant.services.zevrantandroidapp.pojo.CredentialWrapper;
+import static org.acra.ACRA.LOG_TAG;
 
-import java.util.Observer;
+import android.util.Log;
+
+import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
+import com.zevrant.services.zevrantandroidapp.pojo.Credential;
+import com.zevrant.services.zevrantandroidapp.pojo.OAuthToken;
+import com.zevrant.services.zevrantandroidapp.utilities.Constants;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import java.time.LocalDateTime;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class CredentialsService {
 
-    private static CredentialWrapper credentialWrapper;
+    private static OAuthToken oAuthToken;
+    private static LocalDateTime expiresAt;
 
-    public static void init() {
-        credentialWrapper = new CredentialWrapper();
+    public static boolean hasAuthorization() {
+        return oAuthToken != null && StringUtils.isNotBlank(oAuthToken.getAccessToken());
     }
 
-    public void setCredentials(Credential credential) {
-        credentialWrapper.setCredential(credential);
+    private static Credential getCredential() {
+        String username = EncryptionService.getSecret(Constants.SecretNames.LOGIN_USER_NAME);
+        String password = EncryptionService.getSecret(Constants.SecretNames.LOGIN_PASSWORD);
+        Log.d(LOG_TAG, "Login Username: ".concat(username));
+        return new Credential(username, password);
     }
 
-    public void addObserver(Observer observer) {
-        credentialWrapper.addObserver(observer);
+    public static void setOAuthToken(OAuthToken oAuthToken) {
+        CredentialsService.oAuthToken = oAuthToken;
     }
 
-    public static Credential getCredential() {
-        return credentialWrapper.getCredential();
+    public synchronized static String getAuthorization() throws CredentialsNotFoundException {
+        if (oAuthToken == null) {
+            getNewOAuthToken();
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (expiresAt == null
+                || expiresAt.isBefore(now)
+                || expiresAt.isEqual(now)) {
+            getNewOAuthToken();
+        }
+        if (oAuthToken.getAccessToken() == null) {
+            throw new CredentialsNotFoundException("Oauth Service returned an oauth token without the actual token");
+        }
+        return oAuthToken.getAccessToken();
     }
 
-    public static void setCredential(Credential credential) {
-        credentialWrapper.setCredential(credential);
+    private static void getNewOAuthToken() {
+        String response = null;
+        try {
+            Credential credential = getCredential();
+            if(StringUtils.isBlank(credential.getUsername()) || StringUtils.isBlank(credential.getPassword())) {
+                throw new CredentialsNotFoundException("No credentialss could be found please log in.");
+            }
+            Future<String> responseFuture = OAuthService.login(credential.getUsername(), credential.getPassword());
+            response = responseFuture.get();
+            oAuthToken = JsonParser.readValueFromString(response, OAuthToken.class);
+            assert oAuthToken != null : "failed to retrieve new oauth token";
+            assert oAuthToken.getExpiresIn() > 0 : "retrieved an expired oauth token";
+            assert StringUtils.isNotBlank(oAuthToken.getAccessToken()) : "retrieved oauth token without a token string";
+            expiresAt = LocalDateTime.now().plusSeconds(oAuthToken.getExpiresIn() - 2);
+        } catch (ExecutionException | InterruptedException | CredentialsNotFoundException e) {
+            Log.e(LOG_TAG, ExceptionUtils.getStackTrace(e));
+            RuntimeException runtimeException = new RuntimeException(e.getMessage());
+            runtimeException.setStackTrace(e.getStackTrace());
+            throw runtimeException;
+        } catch (AssertionError ex) {
+            assert StringUtils.isNotBlank(response): "retrieved empty response for new oauth token";
+            throw new RuntimeException("Request for token Failed, response body is: \n ".concat(response));
+        }
     }
+
 }

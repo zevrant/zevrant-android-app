@@ -5,27 +5,20 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 
-import com.zevrant.service.zevrantandroidapp.NukeSSLCerts;
-
 import org.acra.ACRA;
 import org.acra.annotation.AcraCore;
-import org.acra.annotation.AcraHttpSender;
 import org.acra.config.CoreConfigurationBuilder;
 import org.acra.config.HttpSenderConfigurationBuilder;
 import org.acra.data.StringFormat;
 import org.acra.sender.HttpSender;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @AcraCore(buildConfigClass = BuildConfig.class)
 public class ZevrantAndroidApp extends Application {
-    private static final Logger logger = LoggerFactory.getLogger(ZevrantAndroidApp.class);
     public static final String CHANNEL_ID = "test";
     public static final String CHANNEL_ID_1 = "test1";
-
     private static final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
     public ZevrantAndroidApp() {

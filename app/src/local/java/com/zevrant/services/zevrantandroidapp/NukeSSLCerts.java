@@ -1,4 +1,4 @@
-package com.zevrant.service.zevrantandroidapp;
+package com.zevrant.services.zevrantandroidapp;
 
 import org.acra.ACRA;
 
@@ -17,7 +17,7 @@ public class NukeSSLCerts {
 
     public static void nuke() {
         try {
-            TrustManager[] trustAllCerts = new TrustManager[] {
+            TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
                         public X509Certificate[] getAcceptedIssuers() {
                             X509Certificate[] myTrustedAnchors = new X509Certificate[0];
@@ -25,10 +25,12 @@ public class NukeSSLCerts {
                         }
 
                         @Override
-                        public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        }
 
                         @Override
-                        public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        }
                     }
             };
 
