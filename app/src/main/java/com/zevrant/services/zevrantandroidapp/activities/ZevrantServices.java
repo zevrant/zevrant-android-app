@@ -19,6 +19,12 @@ import androidx.core.content.ContextCompat;
 import androidx.work.Constraints;
 import androidx.work.Data;
 
+import com.google.android.gms.auth.api.credentials.Credential;
+import com.google.android.gms.auth.api.credentials.CredentialRequest;
+import com.google.android.gms.auth.api.credentials.Credentials;
+import com.google.android.gms.auth.api.credentials.CredentialsClient;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
@@ -54,6 +60,10 @@ public class ZevrantServices extends Activity {
         setContentView(R.layout.activity_main);
         initViewGlue();
         checkPermissions();
+        if(isGooglePlayInstalled()) { //TODO set to convert google smarlock credentials over to locally encrypted
+            getCredentials();
+        }
+
     }
 
     private void checkPermissions() {
@@ -74,6 +84,54 @@ public class ZevrantServices extends Activity {
             Intent intent = new Intent(this, LoginFormActivity.class);
             startActivity(intent);
         });
+    }
+
+    private void getCredentials() {
+        CredentialsClient credentialsClient = Credentials.getClient(this);
+        CredentialRequest credentialRequest = new CredentialRequest.Builder()
+                .setPasswordLoginSupported(true)
+                .setAccountTypes(getString(R.string.oauth_base_url))
+                .build();
+        credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> { //TODO remove after 2 weeks in prod
+            if(task.isSuccessful()) {
+                Credential credential = task.getResult().getCredential();
+                if(credential == null || credential.getId() == null) { 
+                    Log.e(LOG_TAG, "LIES!!!! google smartlock responded success but does not have credentials");
+                    ACRA.getErrorReporter().handleSilentException(new RuntimeException("Invalid Credentials State"));
+                }
+                if(credential != null && !EncryptionService.hasSecret(Constants.SecretNames.LOGIN_USER_NAME)) {
+                    EncryptionService.setSecret(Constants.SecretNames.LOGIN_USER_NAME, credential.getId());
+                    EncryptionService.setSecret(Constants.SecretNames.LOGIN_PASSWORD, credential.getPassword());
+                }
+            } else {
+                Log.i(LOG_TAG, "failed to retrieve login credentials"); 
+            }
+        });
+    }
+
+    private boolean isGooglePlayInstalled() {
+        int result = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(getApplicationContext());
+        switch (result) {
+            case ConnectionResult.SUCCESS:
+                Log.i(LOG_TAG, "Connection Success no action needed");
+                return true;
+            case ConnectionResult.SERVICE_MISSING:
+                Log.e(LOG_TAG, "Google Play Services Missing");
+                break;
+            case ConnectionResult.SERVICE_UPDATING:
+                Log.i(LOG_TAG, "Google Play Services updating retring in 1 minute");
+                break;
+            case ConnectionResult.SERVICE_VERSION_UPDATE_REQUIRED:
+                Log.i(LOG_TAG, "Google Play Services update required");
+                break;
+            case ConnectionResult.SERVICE_DISABLED:
+                Log.e(LOG_TAG, "Google Play Services disabled");
+                break;
+            case ConnectionResult.SERVICE_INVALID:
+                Log.e(LOG_TAG, "Google Play Services invalid?");
+                break;
+        }
+        return false;
     }
 
     public void initServices(Context context) {
