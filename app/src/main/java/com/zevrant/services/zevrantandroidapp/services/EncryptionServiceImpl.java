@@ -101,7 +101,6 @@ public class EncryptionServiceImpl implements EncryptionServiceContract {
 
         try {
             String encryptedSecret = getEncryptedSecret(secretName);
-            encryptedSecret = encryptedSecret.replace("/n", "").replace("\\n", "");
 
             checkInit();
             KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
