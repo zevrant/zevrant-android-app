@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_base_url">https://develop.zevrant-services.com/zevrant-backup-service</string>
+    <string name="oauth_base_url">https://develop.zevrant-services.com/zevrant-oauth2-service</string>
+    <string name="reportsUrl">https://develop.acrarium.zevrant-services.com/report</string>
+    <string name="s3BucketLocation">zevrant-apk-store</string>
+    <string name="artifactFolder">develop</string>
+    <string name="testUpdate">false</string>
+    <string name="reportsUsername">7DmnjRWqfqCtAXUl</string>
+    <string name="reportsPassword">Aa6bhIoN6owcRZOh</string>
+    <string name="manualServiceTesting">true</string>
+</resources>

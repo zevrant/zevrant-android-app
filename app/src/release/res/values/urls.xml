@@ -8,4 +8,5 @@
     <string name="testUpdate">true</string>
     <string name="reportsUsername">Gq2ZqLN7kq8FRl6U</string>
     <string name="reportsPassword">1anErZZN8lUh6vYg</string>
+    <string name="manualServiceTesting">false</string>
 </resources>

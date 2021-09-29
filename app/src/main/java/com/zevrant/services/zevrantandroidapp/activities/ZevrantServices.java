@@ -1,19 +1,23 @@
 package com.zevrant.services.zevrantandroidapp.activities;
 
+import static org.acra.ACRA.LOG_TAG;
+
 import android.Manifest;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.autofill.AutofillManager;
 import android.widget.Button;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.work.Constraints;
+import androidx.work.Data;
 
 import com.google.android.gms.auth.api.credentials.Credential;
 import com.google.android.gms.auth.api.credentials.CredentialRequest;
@@ -23,26 +27,24 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.zevrant.services.zevrantandroidapp.R;
-import com.zevrant.services.zevrantandroidapp.pojo.CredentialWrapper;
+import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
+import com.zevrant.services.zevrantandroidapp.jobs.UpdateJob;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
-import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
+import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
+import com.zevrant.services.zevrantandroidapp.services.EncryptionServiceImpl;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.services.RequestQueueService;
 import com.zevrant.services.zevrantandroidapp.services.UpdateService;
-import com.zevrant.services.zevrantandroidapp.services.android.MainService;
+import com.zevrant.services.zevrantandroidapp.utilities.Constants;
+import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 
 import org.acra.ACRA;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Observable;
-import java.util.Observer;
+import java.util.concurrent.TimeUnit;
 
-public class ZevrantServices extends Activity implements Observer {
-
-    private static final Logger logger = LoggerFactory.getLogger(ZevrantServices.class);
+public class ZevrantServices extends Activity {
 
     private Button loginButton;
     private BottomAppBar bottomAppBar;
@@ -51,14 +53,17 @@ public class ZevrantServices extends Activity implements Observer {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initServices();
-        checkIfGooglePlayInstalled();
+        initServices(getApplicationContext());
+        getApplicationContext().getSystemService(AutofillManager.class)
+                .disableAutofillServices();
 
         setContentView(R.layout.activity_main);
-
         initViewGlue();
         checkPermissions();
-        getCredentials();
+        if(isGooglePlayInstalled()) { //TODO set to convert google smarlock credentials over to locally encrypted
+            getCredentials();
+        }
+
     }
 
     private void checkPermissions() {
@@ -87,80 +92,72 @@ public class ZevrantServices extends Activity implements Observer {
                 .setPasswordLoginSupported(true)
                 .setAccountTypes(getString(R.string.oauth_base_url))
                 .build();
-        credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> {
+        credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> { //TODO remove after 2 weeks in prod
             if(task.isSuccessful()) {
                 Credential credential = task.getResult().getCredential();
-                if(credential.getId() == null) {
-                    logger.error("LIES!!!! google smartlock responded success but does not have credentials");
+                if(credential == null || credential.getId() == null) { 
+                    Log.e(LOG_TAG, "LIES!!!! google smartlock responded success but does not have credentials");
                     ACRA.getErrorReporter().handleSilentException(new RuntimeException("Invalid Credentials State"));
                 }
-                CredentialsService.setCredential(credential);
-                startServices(credential.getId(), credential.getPassword());
+                if(credential != null && !EncryptionService.hasSecret(Constants.SecretNames.LOGIN_USER_NAME)) {
+                    EncryptionService.setSecret(Constants.SecretNames.LOGIN_USER_NAME, credential.getId());
+                    EncryptionService.setSecret(Constants.SecretNames.LOGIN_PASSWORD, credential.getPassword());
+                }
             } else {
-                logger.info("failed to retrieve login credentials");
-
+                Log.i(LOG_TAG, "failed to retrieve login credentials"); 
             }
         });
     }
 
-    private void checkIfGooglePlayInstalled() {
+    private boolean isGooglePlayInstalled() {
         int result = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(getApplicationContext());
         switch (result) {
             case ConnectionResult.SUCCESS:
-                logger.info("Connection Success no action needed");
-                break;
+                Log.i(LOG_TAG, "Connection Success no action needed");
+                return true;
             case ConnectionResult.SERVICE_MISSING:
-                logger.error("Google Play Services Missing");
+                Log.e(LOG_TAG, "Google Play Services Missing");
                 break;
             case ConnectionResult.SERVICE_UPDATING:
-                logger.info("Google Play Services updating retring in 1 minute");
+                Log.i(LOG_TAG, "Google Play Services updating retring in 1 minute");
                 break;
             case ConnectionResult.SERVICE_VERSION_UPDATE_REQUIRED:
-                logger.info("Google Play Services update required");
+                Log.i(LOG_TAG, "Google Play Services update required");
                 break;
             case ConnectionResult.SERVICE_DISABLED:
-                logger.error("Google Play Services disabled");
+                Log.e(LOG_TAG, "Google Play Services disabled");
                 break;
             case ConnectionResult.SERVICE_INVALID:
-                logger.error("Google Play Services invalid?");
+                Log.e(LOG_TAG, "Google Play Services invalid?");
                 break;
         }
+        return false;
     }
 
-    private void initServices() {
+    public void initServices(Context context) {
         try {
+            EncryptionService.init(new EncryptionServiceImpl(context));
             RequestQueueService.init(getFilesDir());
-            OAuthService.init(getApplicationContext());
-            BackupService.init(getApplicationContext());
-            CredentialsService.init();
-            UpdateService.init(getApplicationContext());
+            OAuthService.init(context);
+            BackupService.init(context);
+//            CredentialsService.init(); //no init needed
+            UpdateService.init(context);
+
         } catch (IOException ex) {
-            logger.error(ex.getMessage() + ExceptionUtils.getStackTrace(ex));
+            Log.e(LOG_TAG, ex.getMessage() + ExceptionUtils.getStackTrace(ex));
             ACRA.getErrorReporter().handleSilentException(ex);
 
         }
     }
 
-    private void startServices(String username, String password) {
-        Intent serviceIntent = new Intent(this, MainService.class);
-        serviceIntent.putExtra("username", username);
-        serviceIntent.putExtra("password", password);
-        if(isMyServiceRunning(MainService.class)) {
-            logger.info("Service has been found running, stopping...");
-            if(!stopService(serviceIntent)) {
-                throw new RuntimeException("Failed to stop Main Service aborting");
-            }
-        }
-        startService(serviceIntent);
-    }
+    private void startServices() {
+        Constraints constraints = new Constraints.Builder()
+                .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
+                .build();
+        Data data = new Data.Builder().build();
+        JobUtilities.schedulePeriodicJob(getApplicationContext(), UpdateJob.class, constraints, Constants.JobTags.UPDATE_TAG, data);
+        JobUtilities.schedulePeriodicJob(getApplicationContext(), PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
 
-    private boolean isMyServiceRunning(Class<?> serviceClass) {
-        boolean isRunning = false;
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            isRunning = isRunning || serviceClass.getName().equals(service.service.getClassName());
-        }
-        return isRunning;
     }
 
     public boolean hasAtLeastOneVisibleChild(ViewGroup parent) {
@@ -187,13 +184,4 @@ public class ZevrantServices extends Activity implements Observer {
         }
     }
 
-    @Override
-    public void update(Observable o, Object arg) {
-        if(o instanceof CredentialWrapper) {
-            Credential credential = ((CredentialWrapper) o).getCredential();
-            startServices(credential.getId(), credential.getPassword());
-        } else {
-            logger.info("Observable not instance of Credential Wrapper");
-        }
-    }
 }

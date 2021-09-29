@@ -1,5 +1,7 @@
 package com.zevrant.services.zevrantandroidapp.jobs;
 
+import static org.acra.ACRA.LOG_TAG;
+
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -8,6 +10,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.work.ListenableWorker;
@@ -26,12 +29,11 @@ import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 
 import org.acra.ACRA;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -39,8 +41,6 @@ import java.util.concurrent.Future;
 
 @SuppressLint("RestrictedApi")
 public class UpdateJob extends ListenableWorker {
-
-    private static final Logger logger = LoggerFactory.getLogger(UpdateJob.class);
 
     private final Context context;
     private final String username;
@@ -65,16 +65,16 @@ public class UpdateJob extends ListenableWorker {
                 String authorization = CredentialsService.getAuthorization();
                 UpdateCheckResponse updateCheckResponse = isUpdateAvailable(authorization, sharedPreferences);
                 if (updateCheckResponse.isNewVersionAvailable()) {
-                    logger.info("A newer version is available v{}", updateCheckResponse.getLatestVersion());
+                    Log.i(LOG_TAG, "A newer version is available v".concat(updateCheckResponse.getLatestVersion()));
                     Future<InputStream> apkResponse = UpdateService.downloadVersion(updateCheckResponse.getLatestVersion(), authorization);
-                    logger.info("update downloaded");
+                    Log.i(LOG_TAG, "update downloaded");
                     installApk(apkResponse.get());
                     SharedPreferences.Editor editor = sharedPreferences.edit();
                     editor.putString(context.getString(R.string.version), updateCheckResponse.getLatestVersion()).apply();
                 }
                 mFuture.set(Result.success());
             } catch (IOException | InterruptedException | ExecutionException | CredentialsNotFoundException e) {
-                logger.error("{} \n {}", e.getMessage(), ExceptionUtils.getStackTrace(e));
+                Log.e(LOG_TAG,  Objects.requireNonNull(e.getMessage()).concat(" \n ").concat(ExceptionUtils.getStackTrace(e)));
                 ACRA.getErrorReporter().handleSilentException(e);
                 mFuture.setException(e);
             }
@@ -84,15 +84,14 @@ public class UpdateJob extends ListenableWorker {
 
     private UpdateCheckResponse isUpdateAvailable(String authorization, SharedPreferences sharedPreferences)
             throws CredentialsNotFoundException, ExecutionException, InterruptedException {
-        logger.info("Checking for updates");
-        logger.info("default version is {}", getDefaultVersion());
+        Log.i(LOG_TAG, "Checking for updates");
+        Log.i(LOG_TAG, "default version is ".concat(getDefaultVersion()));
         String version = sharedPreferences.getString(context.getString(R.string.version), getDefaultVersion());
         Future<String> updateResponseFuture = UpdateService.isUpdateAvailable(version, authorization);
         String updateResponse = updateResponseFuture.get();
-        logger.info("Update response received {}", updateResponse);
-        assert updateResponse != null;
+        Log.i(LOG_TAG, "Update response received ".concat(updateResponse));
         UpdateCheckResponse updateCheckResponse = JsonParser.readValueFromString(updateResponse, UpdateCheckResponse.class);
-        assert updateCheckResponse != null;
+        assert updateCheckResponse != null : "null value returned for update check response";
         return updateCheckResponse;
     }
 
@@ -104,7 +103,7 @@ public class UpdateJob extends ListenableWorker {
             ACRA.getErrorReporter().handleSilentException(e);
             mFuture.setException(e);
         }
-        assert pInfo != null;
+        assert pInfo != null : "failed to retrieve version info from package manager";
         return pInfo.versionName;
     }
 
@@ -116,14 +115,14 @@ public class UpdateJob extends ListenableWorker {
         PackageInstaller.Session session = installer.openSession(sessionId);
         OutputStream outputStream = session.openWrite("zevrant-services-".concat(UUID.randomUUID().toString()).concat(".apk"), 0L, 5120000);
         long byteCount = JobUtilities.copyData(is, outputStream);
-        logger.debug("wrote {} bytes to session", byteCount);
+        Log.d(LOG_TAG, "wrote ".concat(String.valueOf(byteCount)).concat(" bytes to session"));
         session.fsync(outputStream);
         outputStream.close();
         Intent receiver = new Intent(context, ZevrantServices.class);
         receiver.setAction("com.example.android.apis.content.SESSION_API_PACKAGE_INSTALLED");
         PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, receiver, 0);
 
-        logger.info("commiting install");
+        Log.i(LOG_TAG, "commiting install");
         session.commit(pendingIntent.getIntentSender());
         session.close();
     }

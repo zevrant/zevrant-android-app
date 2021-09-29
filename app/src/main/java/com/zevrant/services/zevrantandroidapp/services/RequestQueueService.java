@@ -1,6 +1,9 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
-import android.content.Context;
+import static org.acra.ACRA.LOG_TAG;
+
+import android.util.Log;
+
 import com.android.volley.Cache;
 import com.android.volley.Network;
 import com.android.volley.RequestQueue;
@@ -16,21 +19,19 @@ import java.io.IOException;
 
 public class RequestQueueService {
 
+    private static final Network network = new BasicNetwork(new HurlStack());
     private static RequestQueue requestQueue;
-    private static Context context;
-    private static Cache cache;
     private static boolean hasBeenInitialized = false;
-    private static Network network = new BasicNetwork(new HurlStack());
-
 
     public static void init(File filesDir) throws IOException {
         if (!hasBeenInitialized) {
-            cache = new DiskBasedCache(filesDir, 1024 * 1024);
+            Cache cache = new DiskBasedCache(filesDir, 1024 * 1024);
+            requestQueue = new RequestQueue(cache, network);
+            requestQueue.start();
+            hasBeenInitialized = true;
         } else {
-            throw new RuntimeException("RequestQueueService has already been initialized");
+            Log.i(LOG_TAG, "RequestQueueService has already been initialized");
         }
-        requestQueue = new RequestQueue(cache, network);
-        requestQueue.start();
     }
 
     public static void addToQueue(JsonObjectRequest request) {

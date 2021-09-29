@@ -1,13 +1,12 @@
 package com.zevrant.services.zevrantandroidapp.fragments.dialog;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 
 import com.zevrant.services.zevrantandroidapp.R;
 
@@ -16,6 +15,7 @@ import com.zevrant.services.zevrantandroidapp.R;
  * Use the {@link LoginToGooglePlayServices#newInstance} factory method to
  * create an instance of this fragment.
  */
+@Deprecated
 public class LoginToGooglePlayServices extends DialogFragment {
 
     public LoginToGooglePlayServices() {
@@ -28,6 +28,7 @@ public class LoginToGooglePlayServices extends DialogFragment {
      *
      * @return A new instance of fragment LoginToGooglePlayServices.
      */
+    @Deprecated
     public static LoginToGooglePlayServices newInstance() {
         return new LoginToGooglePlayServices();
     }
