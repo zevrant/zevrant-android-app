@@ -5,9 +5,9 @@ plugins {
 
 boolean hasSigningInfo = System.getenv("SIGNING_KEYSTORE") != null && System.getenv("KEYSOTRE_PASSWORD")
 
-String version = "0.0.0"
+String version = "-.0.0"
 
-if(project.hasProperty('projVersion')) {
+if (project.hasProperty('projVersion')) {
     version = project.projVersion
 }
 
@@ -36,22 +36,22 @@ android {
 //        execution 'ANDROIDX_TEST_ORCHESTRATOR'
     }
 
-    if(project.hasProperty('testVariant')) {
+    if (project.hasProperty('testVariant')) {
         testBuildType project.testVariant
     } else {
         testBuildType 'developTest'
     }
-
+    int versionCodeString = (project.hasProperty("versionCode")) ? project.versionCode : 3
     defaultConfig {
         applicationId "com.zevrant.services.zevrantandroidapp"
         testApplicationId "com.zevrant.services.zevrantandroidapp.test"
         minSdkVersion 29
         targetSdkVersion 30
-        versionCode 1
+        versionCode versionCodeString
         versionName version
 
-        buildConfigField 'String', 'TEST_TAGS', '"'+getTestTags()+'"'
-        buildConfigField 'String', 'TEST_SCENARIO', '"'+getTestScenario()+'"'
+        buildConfigField 'String', 'TEST_TAGS', '"' + getTestTags() + '"'
+        buildConfigField 'String', 'TEST_SCENARIO', '"' + getTestScenario() + '"'
 
 
         testInstrumentationRunner "com.zevrant.services.zevrantandroidapp.runner.CucumberTestRunner"
@@ -88,7 +88,7 @@ android {
 
 
         develop {
-            if(hasSigningInfo) {
+            if (hasSigningInfo) {
                 signingConfig signingConfigs.develop
             }
             applicationIdSuffix ".develop"
@@ -99,7 +99,7 @@ android {
         }
 
         developTest {
-            if(hasSigningInfo) {
+            if (hasSigningInfo) {
                 signingConfig signingConfigs.develop
             }
             applicationIdSuffix ".developTest"
@@ -109,11 +109,10 @@ android {
         }
 
         release {
-            if(hasSigningInfo) {
-                signingConfig signingConfigs.release
-            }
-            signingConfig debug.signingConfig
+            signingConfig release.signingConfig
+
             minifyEnabled false
+            debuggable false
         }
 
     }
@@ -143,7 +142,7 @@ dependencies {
     implementation "androidx.work:work-runtime:$workVersion"
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.android.volley:volley:1.2.1'
-    implementation ('com.fasterxml.jackson.core:jackson-databind:2.12.4') { transitive = true }
+    implementation('com.fasterxml.jackson.core:jackson-databind:2.12.4') { transitive = true }
     implementation "androidx.navigation:navigation-fragment:$nav_version"
     implementation "androidx.navigation:navigation-ui:$nav_version"
     implementation "ch.acra:acra-http:5.7.0"
@@ -196,9 +195,9 @@ task setTags(type: Exec) {
     workingDir("$rootDir/app")
     executable("sed")
     String tagListString = ""
-    if(project.hasProperty("tags")) {
+    if (project.hasProperty("tags")) {
         String[] tagsArray = project.tags.split(",")
-        for(String tag : tagsArray) {
+        for (String tag : tagsArray) {
             tagListString = tagListString.concat(tag).concat(",")
         }
         tagListString = tagListString.substring(0, tagListString.length() - 1).trim()
