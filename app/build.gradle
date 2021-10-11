@@ -100,7 +100,7 @@ android {
         }
 
         release {
-            signingConfig release.signingConfig
+            signingConfig signingConfigs.release
 
             minifyEnabled false
             debuggable = false
