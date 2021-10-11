@@ -5,7 +5,7 @@ plugins {
 
 boolean hasSigningInfo = System.getenv("SIGNING_KEYSTORE") != null && System.getenv("KEYSOTRE_PASSWORD")
 
-String version = "-.0.0"
+String version = "0.0.0"
 
 if (project.hasProperty('projVersion')) {
     version = project.projVersion
