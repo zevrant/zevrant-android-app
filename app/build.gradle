@@ -61,8 +61,8 @@ android {
         release {
             // You need to specify either an absolute path or include the
             // keystore file in the same directory as the build.gradle file.
-            storeFile file(System.getenv("SIGNING_KEYSTORE"))
-            storePassword System.getenv("KEYSOTRE_PASSWORD")
+            storeFile file("<REPLACE_ME>")
+            storePassword "<PASSWORD>"
             keyPassword ""
             keyAlias "key0"
         }
@@ -79,9 +79,6 @@ android {
 
 
         develop {
-            if (hasSigningInfo) {
-                signingConfig signingConfigs.develop
-            }
             applicationIdSuffix ".develop"
             minifyEnabled false
             signingConfig debug.signingConfig
@@ -90,9 +87,6 @@ android {
         }
 
         developTest {
-            if (hasSigningInfo) {
-                signingConfig signingConfigs.develop
-            }
             applicationIdSuffix ".developTest"
             minifyEnabled false
             signingConfig debug.signingConfig
