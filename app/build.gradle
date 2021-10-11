@@ -64,7 +64,7 @@ android {
             storeFile file(System.getenv("SIGNING_KEYSTORE"))
             storePassword System.getenv("KEYSOTRE_PASSWORD")
             keyPassword ""
-            keyAlias "1"
+            keyAlias "key0"
         }
     }
 
@@ -100,7 +100,7 @@ android {
         }
 
         release {
-            signingConfig signingConfigs.release
+            signingConfig release.signingConfig
 
             minifyEnabled false
             debuggable = false
