@@ -58,22 +58,13 @@ android {
     }
 
     signingConfigs {
-        if(hasSigningInfo) {
-            develop {
-                // You need to specify either an absolute path or include the
-                // keystore file in the same directory as the build.gradle file.
-                storeFile file(System.getenv("SIGNING_KEYSTORE"))
-                storePassword System.getenv("KEYSOTRE_PASSWORD")
-                keyAlias "1"
-            }
-            release {
-                // You need to specify either an absolute path or include the
-                // keystore file in the same directory as the build.gradle file.
-                storeFile file(System.getenv("SIGNING_KEYSTORE"))
-                storePassword System.getenv("KEYSOTRE_PASSWORD")
-                keyPassword ""
-                keyAlias "1"
-            }
+        release {
+            // You need to specify either an absolute path or include the
+            // keystore file in the same directory as the build.gradle file.
+            storeFile file(System.getenv("SIGNING_KEYSTORE"))
+            storePassword System.getenv("KEYSOTRE_PASSWORD")
+            keyPassword ""
+            keyAlias "1"
         }
     }
 
@@ -112,7 +103,7 @@ android {
             signingConfig release.signingConfig
 
             minifyEnabled false
-            debuggable false
+            debuggable = false
         }
 
     }
