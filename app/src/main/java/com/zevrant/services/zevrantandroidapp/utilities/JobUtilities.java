@@ -36,6 +36,11 @@ public class JobUtilities {
         return workManager.enqueue(workRequest);
     }
 
+    public static void cancelWorkByTag(Context context, String tag) {
+        WorkManager workManager = WorkManager.getInstance(context);
+        workManager.cancelAllWorkByTag(tag);
+    }
+
     public static void schedulePeriodicJob(Context context, Class<? extends ListenableWorker> jobClass,
                                            Constraints constraints, String tag, Data data) {
         schedulePeriodicJob(context, jobClass, constraints, tag, data, 1L, TimeUnit.HOURS);

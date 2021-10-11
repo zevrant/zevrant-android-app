@@ -30,6 +30,7 @@ import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
 import com.zevrant.services.zevrantandroidapp.jobs.UpdateJob;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
+import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionServiceImpl;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
@@ -60,8 +61,12 @@ public class ZevrantServices extends Activity {
         setContentView(R.layout.activity_main);
         initViewGlue();
         checkPermissions();
-        if(isGooglePlayInstalled()) { //TODO set to convert google smarlock credentials over to locally encrypted
+        if(!EncryptionService.hasSecret(Constants.SecretNames.LOGIN_USER_NAME)
+                && isGooglePlayInstalled()) { //TODO remove witrh next release
             getCredentials();
+        }
+        if(EncryptionService.hasSecret(Constants.SecretNames.LOGIN_USER_NAME)) {
+            startServices();
         }
 
     }
@@ -92,7 +97,7 @@ public class ZevrantServices extends Activity {
                 .setPasswordLoginSupported(true)
                 .setAccountTypes(getString(R.string.oauth_base_url))
                 .build();
-        credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> { //TODO remove after 2 weeks in prod
+        credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> { //TODO remove with next release
             if(task.isSuccessful()) {
                 Credential credential = task.getResult().getCredential();
                 if(credential == null || credential.getId() == null) { 
@@ -155,7 +160,7 @@ public class ZevrantServices extends Activity {
                 .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
                 .build();
         Data data = new Data.Builder().build();
-        JobUtilities.schedulePeriodicJob(getApplicationContext(), UpdateJob.class, constraints, Constants.JobTags.UPDATE_TAG, data);
+        JobUtilities.cancelWorkByTag(getApplicationContext(), Constants.JobTags.UPDATE_TAG); //TODO remove after a couple weeks
         JobUtilities.schedulePeriodicJob(getApplicationContext(), PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
 
     }
