@@ -32,7 +32,6 @@ public class CredentialsService {
             }
             encryptToken(oAuthToken);
             CredentialsService.oAuthToken = oAuthToken;
-            OAuthService.loadRoles();
         } else if (CredentialsService.oAuthToken == null) {
             CredentialsService.oAuthToken = decryptToken();
         }
@@ -61,8 +60,8 @@ public class CredentialsService {
     private static void getNewOAuthToken() {
         try {
             OAuthToken oAuthToken = OAuthService.refreshToken(manageOAuthToken(null, false));
-
             manageOAuthToken(oAuthToken, true);
+            OAuthService.loadRoles();
             Log.d("Successfuly refreshed token", LOG_TAG);
         } catch (ExecutionException | InterruptedException e) {
             Log.e(LOG_TAG, ExceptionUtils.getStackTrace(e));

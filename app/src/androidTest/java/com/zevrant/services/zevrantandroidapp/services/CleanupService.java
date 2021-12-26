@@ -17,19 +17,16 @@ import androidx.core.content.ContextCompat;
 
 import com.android.volley.Request;
 import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;
-import com.zevrant.services.zevrantuniversalcommon.rest.FileInfo;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public class CleanupService {
-    private final String[] projection = new String[]{
+    private static final String[] projection = new String[]{
             MediaStore.Images.Media._ID
     };
 
-    public Future<String> eraseBackups(String authorization, String backupUrl, Context context) {
+    public static Future<String> eraseBackups(String authorization, String backupUrl, Context context) {
         CompletableFuture<String> future = new CompletableFuture<>();
         StringRequest objectRequest = new StringRequest(Request.Method.DELETE,
                 backupUrl.concat("/file-backup"),
@@ -37,11 +34,11 @@ public class CleanupService {
                 DefaultRequestHandlers.getErrorResponseListener(future));
         objectRequest.setOAuthToken(authorization);
         RequestQueueService.addToQueue(objectRequest);
-        deleteAllFromMediaStore(context);
+//        deleteAllFromMediaStore(context);
         return future;
     }
 
-    private void deleteAllFromMediaStore(Context context) {
+    private static void deleteAllFromMediaStore(Context context) {
         assertThat("Permission was not granted", ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE), is(PackageManager.PERMISSION_GRANTED));
 
         Uri mediaUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
@@ -52,8 +49,6 @@ public class CleanupService {
                 new String[]{},
                 null
         )) {
-            Log.i(LOG_TAG, "Job running");
-            List<FileInfo> fileInfoList = new ArrayList<>();
             Log.i(LOG_TAG, "found ".concat(String.valueOf(cursor.getCount()).concat(" images")));
             int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
             while (cursor.moveToNext()) {

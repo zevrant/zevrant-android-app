@@ -140,6 +140,7 @@ android {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.12'
     String espressoVersion = '3.4.0'
     String workVersion = '2.6.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.1'

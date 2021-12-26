@@ -14,9 +14,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.autofill.AutofillManager;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
 
 import androidx.core.app.ActivityCompat;
@@ -53,21 +51,6 @@ public class ZevrantServices extends Activity {
     private BottomAppBar bottomAppBar;
     private WebView loginWebView;
 
-    public void overrideWebClient() {
-//        if(BuildConfig.BUILD_TYPE.equals("developTest")) {
-        loginWebView.clearCache(true);
-        loginWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest url) {
-                getIntent().setData(url.getUrl());
-                return false;
-            }
-
-        });
-//        }
-    }
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,6 +86,7 @@ public class ZevrantServices extends Activity {
 
                     CredentialsService.manageOAuthToken(OAuthService.exchangeCode(auth.getCode()), true);
                     CredentialsService.getAuthorization();
+                    OAuthService.loadRoles();
                 } catch (ExecutionException | InterruptedException | CredentialsNotFoundException e) {
                     e.printStackTrace();
                     Log.i("failed to exchange authorization code for a token", LOG_TAG);

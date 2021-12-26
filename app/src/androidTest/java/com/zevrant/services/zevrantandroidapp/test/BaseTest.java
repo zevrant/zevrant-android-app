@@ -9,8 +9,6 @@ import static org.hamcrest.core.StringContains.containsString;
 
 import android.content.Context;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.zevrant.services.zevrantandroidapp.secrets.Secrets;
 import com.zevrant.services.zevrantandroidapp.secrets.SecretsInitializer;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
@@ -19,7 +17,6 @@ import com.zevrant.services.zevrantuniversalcommon.rest.oauth.response.OAuthToke
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
-import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -33,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-@RunWith(AndroidJUnit4.class)
 public class BaseTest {
 
     public Context getTargetContext() {

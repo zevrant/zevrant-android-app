@@ -6,11 +6,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsNot.not;
 
-import android.Manifest;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -18,14 +16,15 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 
-import androidx.core.content.ContextCompat;
 import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.work.ListenableWorker;
 import androidx.work.testing.TestListenableWorkerBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
@@ -42,6 +41,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -57,13 +57,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+@RunWith(AndroidJUnit4.class)
+
 public class PhotoBackupTest extends BaseTest {
 
     @Rule
     public ActivityScenarioRule<ZevrantServices> activityRule
             = new ActivityScenarioRule<>(ZevrantServices.class);
     private String fileHash;
-    private CleanupService cleanupService;
 
 //    @Rule
 //    @JvmField
@@ -73,15 +74,14 @@ public class PhotoBackupTest extends BaseTest {
     public void setup() throws IllegalAccessException, NoSuchFieldException, IOException {
         super.setup();
         Intents.init();
-        assertThat("Permission was not granted", ContextCompat.checkSelfPermission(getTargetContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE), is(PackageManager.PERMISSION_GRANTED));
+//        assertThat("Permission was not granted", ContextCompat.checkSelfPermission(getTargetContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE), is(PackageManager.PERMISSION_GRANTED));
         fileHash = "";
-        cleanupService = new CleanupService();
     }
 
     @After
-    public void teardown() throws CredentialsNotFoundException, IOException {
-//        cleanupService.eraseBackups(CredentialsService.getAuthorization(), getTargetContext().getString(R.string.backup_base_url), getTestContext());
-        cleanupService = null;
+    public void teardown() throws CredentialsNotFoundException {
+        CleanupService.eraseBackups(CredentialsService.getAuthorization(), getTargetContext().getString(R.string.backup_base_url), getTestContext());
+        Intents.release();
     }
 
     @Test

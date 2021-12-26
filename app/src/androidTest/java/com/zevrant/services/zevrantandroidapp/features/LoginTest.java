@@ -7,6 +7,7 @@ import static org.hamcrest.core.IsNull.nullValue;
 
 import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
@@ -19,9 +20,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
+@RunWith(AndroidJUnit4.class)
 public class LoginTest extends BaseTest {
 
     private static final String testUsername = "test-admin";
@@ -46,9 +49,7 @@ public class LoginTest extends BaseTest {
     }
 
     @Test
-    public void loginRedirectTest() throws InterruptedException, CredentialsNotFoundException {
-        activityRule.getScenario().onActivity(ZevrantServices::overrideWebClient);
-
+    public void loginRedirectTest() throws CredentialsNotFoundException {
         assertThat("Encryption Service did not have expected token", EncryptionService.hasSecret(Constants.SecretNames.REFRESH_TOKEN_1), is(true));
         assertThat("Credentials Service did not have a valid token", CredentialsService.getAuthorization(), is(not(nullValue())));
     }

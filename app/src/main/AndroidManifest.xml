@@ -20,11 +20,11 @@
         android:theme="@style/Theme.ZevrantAndroidApp"
         android:networkSecurityConfig="@xml/network_security_config"
         tools:ignore="HardcodedDebugMode">
-        <activity
+        <!--        <activity-->
         <!--            android:name=".activities.MediaViewer"-->
-        android:exported="true"
-        android:label="@string/title_activity_media_viewer"
-        android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" />
+        <!--        android:exported="true"-->
+        <!--        android:label="@string/title_activity_media_viewer"-->
+        <!--        android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" />-->
         <!-- <activity -->
         <!-- android:name=".activities.PhotoViewer" -->
         <!-- android:exported="true" -->
