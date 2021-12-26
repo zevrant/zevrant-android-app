@@ -4,6 +4,8 @@ import androidx.annotation.Nullable;
 
 import com.android.volley.Response;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +20,6 @@ public class StringRequest extends com.android.volley.toolbox.StringRequest {
         super(method, url, listener, errorListener);
         this.headers = new HashMap<>();
         this.params = new HashMap<>();
-
         this.setContentType("application/json");
     }
 
@@ -60,4 +61,11 @@ public class StringRequest extends com.android.volley.toolbox.StringRequest {
     public void setOAuthToken(String token) {
         headers.put("Authorization", "bearer ".concat(token));
     }
+
+    @Override
+    public String getBodyContentType() {
+        String contentType = headers.get("Content-Type");
+        return StringUtils.isNotBlank(contentType) ? contentType : "application/json";
+    }
 }
+

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="backup_base_url">https://192.168.1.21:8080/zevrant-backup-service</string>
-    <string name="oauth_base_url">https://192.168.1.21:8080/zevrant-oauth2-service</string>
-    <string name="reportsUrl">https://develop.acrarium.zevrant-services.com/report</string>
+    <string name="backup_base_url">https://172.16.0.1:8080/zevrant-backup-service</string>
+    <string name="keycloak_url">https://172.16.0.1:8080/zevrant-oauth2-service</string>
+    <string name="reportsUrl">http://192.168.1.21:9010/zevrant-acra-backend/report</string>
     <string name="s3BucketLocation">zevrant-apk-store</string>
     <string name="artifactFolder">local</string>
     <string name="testUpdate">false</string>

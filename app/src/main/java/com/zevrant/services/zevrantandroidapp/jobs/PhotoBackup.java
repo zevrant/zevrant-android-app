@@ -1,6 +1,6 @@
 package com.zevrant.services.zevrantandroidapp.jobs;
 
-import static org.acra.ACRA.LOG_TAG;
+import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
 
 import android.annotation.SuppressLint;
 import android.content.ContentUris;
@@ -18,13 +18,16 @@ import androidx.work.impl.utils.futures.SettableFuture;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
-import com.zevrant.services.zevrantandroidapp.pojo.BackupFileRequest;
-import com.zevrant.services.zevrantandroidapp.pojo.CheckExistence;
-import com.zevrant.services.zevrantandroidapp.pojo.FileInfo;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
-import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
+import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
+import com.zevrant.services.zevrantandroidapp.services.OAuthService;
+import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
+import com.zevrant.services.zevrantuniversalcommon.contants.Roles;
+import com.zevrant.services.zevrantuniversalcommon.rest.CheckExistence;
+import com.zevrant.services.zevrantuniversalcommon.rest.FileInfo;
+import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.BackupFileRequest;
 
 import org.acra.ACRA;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
@@ -69,29 +72,42 @@ public class PhotoBackup extends ListenableWorker {
     @Override
     public ListenableFuture<Result> startWork() {
         mFuture = SettableFuture.create();
+        if (!EncryptionService.isInitialized()
+                || !EncryptionService.hasSecret(Constants.SecretNames.REFRESH_TOKEN_1)) {
+            //TODO send notification prompting user login
+            Log.e("User not logged in", LOG_TAG);
+            mFuture.set(Result.failure());
+            return mFuture;
+        }
         getBackgroundExecutor().execute(() -> {
-            Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-            try (Cursor cursor = context.getContentResolver().query(
-                    uri,
-                    projection,
-                    null,
-                    new String[]{},
-                    null
-            )) {
-                Log.i(LOG_TAG, "Job running");
-                List<FileInfo> fileInfoList = new ArrayList<>();
-                Log.i(LOG_TAG, "found ".concat(String.valueOf(cursor.getCount()).concat(" images")));
-                int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
-                int nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME);
-                int sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE);
-                while (cursor.moveToNext()) {
-                    processMediaStoreResultSet(idColumn, nameColumn, sizeColumn, cursor, uri, fileInfoList);
+            boolean hasBackupPermission = OAuthService.canI(Roles.BACKUPS);
+            if (!hasBackupPermission) {
+                dataBuilder.putString("reason", "user does not have permission to access backups");
+                mFuture.set(Result.failure(dataBuilder.build()));
+            } else {
+                Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                try (Cursor cursor = context.getContentResolver().query(
+                        uri,
+                        projection,
+                        null,
+                        new String[]{},
+                        null
+                )) {
+                    Log.i(LOG_TAG, "Job running");
+                    List<FileInfo> fileInfoList = new ArrayList<>();
+                    Log.i(LOG_TAG, "found ".concat(String.valueOf(cursor.getCount()).concat(" images")));
+                    int idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
+                    int nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME);
+                    int sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE);
+                    while (cursor.moveToNext()) {
+                        processMediaStoreResultSet(idColumn, nameColumn, sizeColumn, cursor, uri, fileInfoList);
+                    }
+                    backupFiles(fileInfoList, uri);
+                } catch (IOException | NoSuchAlgorithmException | CredentialsNotFoundException | ExecutionException | InterruptedException e) {
+                    ACRA.getErrorReporter().handleSilentException(e);
+                    e.printStackTrace();
+                    mFuture.set(Result.failure());
                 }
-                backupFiles(fileInfoList, uri);
-            } catch (IOException | NoSuchAlgorithmException | CredentialsNotFoundException | ExecutionException | InterruptedException e) {
-                ACRA.getErrorReporter().handleSilentException(e);
-                e.printStackTrace();
-                mFuture.set(Result.failure());
             }
         });
         return mFuture;
@@ -99,8 +115,7 @@ public class PhotoBackup extends ListenableWorker {
 
     private void backupFiles(List<FileInfo> fileInfoList, Uri uri) throws CredentialsNotFoundException, ExecutionException, InterruptedException {
         Log.i(LOG_TAG, String.valueOf(fileInfoList.size()).concat(" images hashed"));
-        String authorization = CredentialsService.getAuthorization();
-        Future<String> checkExistenceResponse = BackupService.checkExistence(new CheckExistence(fileInfoList), authorization);
+        Future<String> checkExistenceResponse = BackupService.checkExistence(new CheckExistence(fileInfoList));
         CheckExistence existence = JsonParser.readValueFromString(checkExistenceResponse.get(), CheckExistence.class);
         assert existence != null : "null value returned from existence check for photo backup";
         assert existence.getFileInfos() != null : "null was returned for list of fileinfos in photobackup";
@@ -122,9 +137,8 @@ public class PhotoBackup extends ListenableWorker {
     private void sendBackUp(FileInfo fileInfo, Uri uri) throws IOException, CredentialsNotFoundException, ExecutionException, InterruptedException {
         BackupFileRequest backupFileRequest = new BackupFileRequest(fileInfo, JobUtilities.bytesToHex(getFileBytes(uri, fileInfo)));
         Log.i(LOG_TAG, backupFileRequest.toString());
-        String authorization = CredentialsService.getAuthorization();
         Log.i(LOG_TAG, "backing up file ".concat(fileInfo.getFileName()));
-        Future<String> future = BackupService.backupFile(backupFileRequest, authorization);
+        Future<String> future = BackupService.backupFile(backupFileRequest);
         future.get();//don't really care about successfull responses just need to block until done otherwise we
         // will enqueue too many requests and throw an OOM exception
         Log.i(LOG_TAG, fileInfo.getFileName().concat(" was successfully backed up"));

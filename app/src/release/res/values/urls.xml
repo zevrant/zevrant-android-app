@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="backup_base_url">https://zevrant-services.com/zevrant-backup-service</string>
-    <string name="oauth_base_url">https://zevrant-services.com/zevrant-oauth2-service</string>
+    <string name="keycloak_url">https://zevrant-services.com/zevrant-oauth2-service</string>
+    <string name="keycloak_base_url">https://zevrant-services.com/auth/realms/zevrant-services/protocol/openid-connect/token</string>
     <string name="reportsUrl">https://acrarium.zevrant-services.com/report</string>
     <string name="s3BucketLocation">zevrant-apk-store</string>
     <string name="artifactFolder">release</string>

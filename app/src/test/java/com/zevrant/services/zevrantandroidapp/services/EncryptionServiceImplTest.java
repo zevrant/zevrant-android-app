@@ -1,6 +1,6 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
-import static org.acra.ACRA.LOG_TAG;
+import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.anyInt;

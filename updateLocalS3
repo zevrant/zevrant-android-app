@@ -1,7 +1,0 @@
-#!/bin/bash
-
- ./gradlew clean assembleLocal
-zipalign -p -f -v 4 app/build/outputs/apk/local/app-local.apk ./zevrant-services-unsigned.apk
-apksigner sign --ks ~/test.jks --in ./zevrant-services-unsigned.apk --out ./zevrant-services.apk --ks-pass "pass:testtest"
-apksigner verify -v zevrant-services.apk
-aws s3 cp ./zevrant-services.apk s3://zevrant-apk-store/local/0.0.3/zevrant-services.apk

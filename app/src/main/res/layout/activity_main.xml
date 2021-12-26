@@ -7,6 +7,12 @@
     android:layout_height="match_parent"
     tools:context=".activities.ZevrantServices">
 
+    <WebView
+        android:id="@+id/login_web_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible" />
+
     <com.google.android.material.bottomappbar.BottomAppBar
         android:id="@+id/mainActivityBottomAppBar"
         style="@style/Widget.MaterialComponents.BottomAppBar.Colored"

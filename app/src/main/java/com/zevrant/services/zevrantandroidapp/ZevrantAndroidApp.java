@@ -31,8 +31,6 @@ public class ZevrantAndroidApp extends Application {
         builder
                 .setReportFormat(StringFormat.JSON)
                 .getPluginConfigurationBuilder(HttpSenderConfigurationBuilder.class)
-                .setBasicAuthLogin(base.getString(R.string.reportsUsername))
-                .setBasicAuthPassword(base.getString(R.string.reportsPassword))
                 .setHttpMethod(HttpSender.Method.POST)
                 .setUri(base.getString(R.string.reportsUrl))
                 .setEnabled(true);
