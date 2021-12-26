@@ -1,6 +1,6 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
-import static org.acra.ACRA.LOG_TAG;
+import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
 
 import android.util.Log;
 
@@ -24,6 +24,11 @@ public class DefaultRequestHandlers {
         return (volleyError) -> {
             String completeString = "FAILURE: ";
             Data.Builder failureDataBuilder = new Data.Builder();
+            if (volleyError != null
+                    && volleyError.networkResponse != null
+                    && volleyError.networkResponse.statusCode == 401) {
+                return; //We do not need an error report for login/authentication errors
+            }
             if (volleyError.getMessage() != null) {
                 Log.e(LOG_TAG, volleyError.getMessage());
                 failureDataBuilder.putString("message", volleyError.getMessage());

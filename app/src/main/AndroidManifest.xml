@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:name=".ZevrantAndroidApp"
@@ -16,22 +17,37 @@
         android:largeHeap="true"
         android:roundIcon="@drawable/app_icon"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ZevrantAndroidApp">
+        android:theme="@style/Theme.ZevrantAndroidApp"
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:ignore="HardcodedDebugMode">
         <!--        <activity-->
-        <!--            android:name=".activities.PhotoViewer"-->
-        <!--            android:exported="true"-->
-        <!--            android:label="@string/title_activity_photo_viewer"-->
-        <!--            android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" />-->
+        <!--            android:name=".activities.MediaViewer"-->
+        <!--        android:exported="true"-->
+        <!--        android:label="@string/title_activity_media_viewer"-->
+        <!--        android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" />-->
+        <!-- <activity -->
+        <!-- android:name=".activities.PhotoViewer" -->
+        <!-- android:exported="true" -->
+        <!-- android:label="@string/title_activity_photo_viewer" -->
+        <!-- android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" /> -->
         <activity
             android:name=".activities.ZevrantServices"
             android:label="@string/title_activity_main">
-            <intent-filter>
+            <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="zevrant-services"
+                    android:pathPrefix="/"
+                    android:scheme="zevrant" />
             </intent-filter>
         </activity>
-        <activity android:name=".activities.LoginFormActivity" />
+
     </application>
 
 </manifest>

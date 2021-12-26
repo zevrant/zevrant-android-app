@@ -1,17 +1,20 @@
 package com.zevrant.services.zevrantandroidapp.activities;
 
-import static org.acra.ACRA.LOG_TAG;
+import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.autofill.AutofillManager;
+import android.webkit.WebView;
 import android.widget.Button;
 
 import androidx.core.app.ActivityCompat;
@@ -19,37 +22,34 @@ import androidx.core.content.ContextCompat;
 import androidx.work.Constraints;
 import androidx.work.Data;
 
-import com.google.android.gms.auth.api.credentials.Credential;
-import com.google.android.gms.auth.api.credentials.CredentialRequest;
-import com.google.android.gms.auth.api.credentials.Credentials;
-import com.google.android.gms.auth.api.credentials.CredentialsClient;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.material.bottomappbar.BottomAppBar;
 import com.zevrant.services.zevrantandroidapp.R;
-import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
-import com.zevrant.services.zevrantandroidapp.jobs.UpdateJob;
+import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
+import com.zevrant.services.zevrantandroidapp.pojo.AuthBody;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionServiceImpl;
+import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.services.RequestQueueService;
 import com.zevrant.services.zevrantandroidapp.services.UpdateService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
-import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 
 import org.acra.ACRA;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class ZevrantServices extends Activity {
 
     private Button loginButton;
     private BottomAppBar bottomAppBar;
-
+    private WebView loginWebView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,17 +58,44 @@ public class ZevrantServices extends Activity {
         getApplicationContext().getSystemService(AutofillManager.class)
                 .disableAutofillServices();
 
+        handleRedirect(getIntent());
         setContentView(R.layout.activity_main);
         initViewGlue();
         checkPermissions();
-        if(!EncryptionService.hasSecret(Constants.SecretNames.LOGIN_USER_NAME)
-                && isGooglePlayInstalled()) { //TODO remove witrh next release
-            getCredentials();
-        }
-        if(EncryptionService.hasSecret(Constants.SecretNames.LOGIN_USER_NAME)) {
+        if (EncryptionService.hasSecret(Constants.SecretNames.REFRESH_TOKEN_1)) {
+            loadRoles();
             startServices();
+//            Intent intent = new Intent(this, MediaViewer.class);
+//            startActivity(intent);
         }
+    }
 
+    private void loadRoles() {
+        new Thread(OAuthService::loadRoles);
+    }
+
+    public void handleRedirect(Intent intent) {
+        new Thread(() -> {
+            if (intent != null && intent.getData() != null) {
+                String authBody = new String(
+                        Base64.getDecoder().decode(
+                                intent.getData().getQueryParameter("body")), StandardCharsets.UTF_8);
+                AuthBody auth = JsonParser.readValueFromString(authBody, AuthBody.class);
+                try {
+                    assert auth != null;
+
+                    CredentialsService.manageOAuthToken(OAuthService.exchangeCode(auth.getCode()), true);
+                    CredentialsService.getAuthorization();
+                    OAuthService.loadRoles();
+                } catch (ExecutionException | InterruptedException | CredentialsNotFoundException e) {
+                    e.printStackTrace();
+                    Log.i("failed to exchange authorization code for a token", LOG_TAG);
+                    ACRA.getErrorReporter().handleSilentException(e);
+                }
+            } else {
+                Log.d("No Data in Intent", LOG_TAG);
+            }
+        }).start();
     }
 
     private void checkPermissions() {
@@ -77,66 +104,40 @@ public class ZevrantServices extends Activity {
                 PackageManager.PERMISSION_GRANTED) {
             // You can use the API that requires the permission.
             // The registered ActivityResultCallback gets the result of this request.
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private void initViewGlue() {
         bottomAppBar = findViewById(R.id.mainActivityBottomAppBar);
         loginButton = findViewById(R.id.loginButton);
+        loginWebView = findViewById(R.id.login_web_view);
 
+//        if(BuildConfig.BUILD_TYPE.equals("developTest")) {
+        loginWebView.getSettings().setJavaScriptEnabled(true);
+//        }
         loginButton.setOnClickListener((view) -> {
-            Intent intent = new Intent(this, LoginFormActivity.class);
-            startActivity(intent);
+            loginWebView.loadUrl(new Uri.Builder()
+                    .scheme("https")
+                    .encodedAuthority("develop.zevrant-services.com")
+                    .path("/auth/realms/zevrant-services/protocol/openid-connect/auth")
+                    .appendQueryParameter("client_id", "android")
+                    .appendQueryParameter("scope", "openid")
+                    .appendQueryParameter("response_type", "code")
+                    .appendQueryParameter("redirect_uri", "https://android.develop.zevrant-services.com")
+                    .build().toString());
+            loginWebView.setVisibility(View.VISIBLE);
+//            startActivity(new Intent(Intent.ACTION_VIEW, new Uri.Builder()
+//                    .scheme("https")
+//                    .encodedAuthority("develop.zevrant-services.com")
+//                    .path("/auth/realms/zevrant-services/protocol/openid-connect/auth")
+//                    .appendQueryParameter("client_id", "android")
+//                    .appendQueryParameter("scope", "openid")
+//                    .appendQueryParameter("response_type", "code")
+//                    .appendQueryParameter("redirect_uri", "https://android.develop.zevrant-services.com")
+//                    .build()));
         });
-    }
-
-    private void getCredentials() {
-        CredentialsClient credentialsClient = Credentials.getClient(this);
-        CredentialRequest credentialRequest = new CredentialRequest.Builder()
-                .setPasswordLoginSupported(true)
-                .setAccountTypes(getString(R.string.oauth_base_url))
-                .build();
-        credentialsClient.request(credentialRequest).addOnCompleteListener((task) -> { //TODO remove with next release
-            if(task.isSuccessful()) {
-                Credential credential = task.getResult().getCredential();
-                if(credential == null || credential.getId() == null) { 
-                    Log.e(LOG_TAG, "LIES!!!! google smartlock responded success but does not have credentials");
-                    ACRA.getErrorReporter().handleSilentException(new RuntimeException("Invalid Credentials State"));
-                }
-                if(credential != null && !EncryptionService.hasSecret(Constants.SecretNames.LOGIN_USER_NAME)) {
-                    EncryptionService.setSecret(Constants.SecretNames.LOGIN_USER_NAME, credential.getId());
-                    EncryptionService.setSecret(Constants.SecretNames.LOGIN_PASSWORD, credential.getPassword());
-                }
-            } else {
-                Log.i(LOG_TAG, "failed to retrieve login credentials"); 
-            }
-        });
-    }
-
-    private boolean isGooglePlayInstalled() {
-        int result = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(getApplicationContext());
-        switch (result) {
-            case ConnectionResult.SUCCESS:
-                Log.i(LOG_TAG, "Connection Success no action needed");
-                return true;
-            case ConnectionResult.SERVICE_MISSING:
-                Log.e(LOG_TAG, "Google Play Services Missing");
-                break;
-            case ConnectionResult.SERVICE_UPDATING:
-                Log.i(LOG_TAG, "Google Play Services updating retring in 1 minute");
-                break;
-            case ConnectionResult.SERVICE_VERSION_UPDATE_REQUIRED:
-                Log.i(LOG_TAG, "Google Play Services update required");
-                break;
-            case ConnectionResult.SERVICE_DISABLED:
-                Log.e(LOG_TAG, "Google Play Services disabled");
-                break;
-            case ConnectionResult.SERVICE_INVALID:
-                Log.e(LOG_TAG, "Google Play Services invalid?");
-                break;
-        }
-        return false;
     }
 
     public void initServices(Context context) {
@@ -160,8 +161,7 @@ public class ZevrantServices extends Activity {
                 .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
                 .build();
         Data data = new Data.Builder().build();
-        JobUtilities.cancelWorkByTag(getApplicationContext(), Constants.JobTags.UPDATE_TAG); //TODO remove after a couple weeks
-        JobUtilities.schedulePeriodicJob(getApplicationContext(), PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
+//        JobUtilities.schedulePeriodicJob(getApplicationContext(), PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
 
     }
 

@@ -1,12 +1,13 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
-import static org.acra.ACRA.LOG_TAG;
+import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
 
 import android.util.Log;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.acra.ACRA;
@@ -25,6 +26,16 @@ public class JsonParser {
             return objectMapper.readValue(jsonString, clazz);
         } catch (JsonProcessingException ex) {
             Log.e(LOG_TAG, "Failed Processing json string into class ".concat(String.valueOf(clazz)).concat(", ").concat(ExceptionUtils.getStackTrace(ex)).concat(" \n ".concat(jsonString)));
+            ACRA.getErrorReporter().handleSilentException(ex);
+        }
+        return null;
+    }
+
+    public synchronized static <T> T readValueFromString(String jsonString, TypeReference<T> typeReference) {
+        try {
+            return objectMapper.readValue(jsonString, typeReference);
+        } catch (JsonProcessingException ex) {
+            Log.e(LOG_TAG, "Failed Processing json string into class ".concat(String.valueOf(typeReference)).concat(", ").concat(ExceptionUtils.getStackTrace(ex)).concat(" \n ".concat(jsonString)));
             ACRA.getErrorReporter().handleSilentException(ex);
         }
         return null;

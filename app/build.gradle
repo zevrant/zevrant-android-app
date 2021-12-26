@@ -36,6 +36,14 @@ android {
 //        execution 'ANDROIDX_TEST_ORCHESTRATOR'
     }
 
+    packagingOptions {
+        exclude("META-INF/INDEX.LIST")
+        exclude("META-INF/DEPENDENCIES")
+        exclude("META-INF/groovy-release-info.properties")
+        exclude("META-INF/LICENSE.md")
+        exclude("META-INF/NOTICE.md")
+    }
+
     if (project.hasProperty('testVariant')) {
         testBuildType project.testVariant
     } else {
@@ -45,7 +53,8 @@ android {
     defaultConfig {
         applicationId "com.zevrant.services.zevrantandroidapp"
         testApplicationId "com.zevrant.services.zevrantandroidapp.test"
-        minSdkVersion 29
+        manifestPlaceholders = [appAuthRedirectScheme: 'com.zevrant.services.zevrantandroidapp']
+        minSdkVersion 28
         targetSdkVersion 30
         versionCode versionCodeString
         versionName version
@@ -53,8 +62,9 @@ android {
         buildConfigField 'String', 'TEST_TAGS', '"' + getTestTags() + '"'
         buildConfigField 'String', 'TEST_SCENARIO', '"' + getTestScenario() + '"'
 
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        testInstrumentationRunner "com.zevrant.services.zevrantandroidapp.runner.CucumberTestRunner"
+//        testInstrumentationRunner "com.zevrant.services.zevrantandroidapp.CucumberTestRunner"
     }
 
     signingConfigs {
@@ -106,8 +116,8 @@ android {
     flavorDimensions "version"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
     buildFeatures {
         viewBinding true
@@ -115,42 +125,38 @@ android {
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.12'
     String espressoVersion = '3.4.0'
-    String cucumberVersion = '4.5.4'
     String workVersion = '2.6.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     def nav_version = "2.3.5"
+    implementation 'com.zevrant.services:zevrant-universal-common:test-1'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'com.google.android.material:material:1.4.0'
     implementation "androidx.work:work-runtime:$workVersion"
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.android.volley:volley:1.2.1'
-    implementation('com.fasterxml.jackson.core:jackson-databind:2.12.4') { transitive = true }
+    implementation('com.fasterxml.jackson.core:jackson-databind:2.12.5') { transitive = true }
     implementation "androidx.navigation:navigation-fragment:$nav_version"
     implementation "androidx.navigation:navigation-ui:$nav_version"
     implementation "ch.acra:acra-http:5.7.0"
     implementation 'org.bouncycastle:bcprov-jdk16:1.46'
-    implementation 'com.google.android.gms:play-services-auth:19.2.0'
+    implementation 'net.openid:appauth:0.10.0'
 
-    testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:3.9.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation "androidx.test.espresso:espresso-core:$espressoVersion"
+    androidTestImplementation ("androidx.test.espresso:espresso-core:$espressoVersion")
+    androidTestImplementation "androidx.test.espresso:espresso-web:$espressoVersion"
     androidTestImplementation "com.android.support.test.espresso:espresso-intents:$espressoVersion"
-    androidTestImplementation "io.cucumber:cucumber-core:$cucumberVersion"
-    androidTestImplementation "io.cucumber:cucumber-android:$cucumberVersion"
     androidTestImplementation 'androidx.test:core:1.4.0'
     androidTestImplementation 'androidx.test:rules:1.4.0'
     androidTestImplementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.3'
     androidTestImplementation "androidx.work:work-testing:$workVersion"
 
     androidTestUtil 'androidx.test:orchestrator:1.4.0'
-
-//    androidTestImplementation "io.cucumber:cucumber-java:6.6.0"
-//    androidTestImplementation "io.cucumber:cucumber-picocontainer:6.11.0"
 }
 
 task pullReport(type: Exec) {
