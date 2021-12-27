@@ -1,6 +1,5 @@
 plugins {
     id 'com.android.application'
-    id "com.github.spacialcircumstances.gradle-cucumber-reporting" version "0.1.24"
 }
 
 boolean hasSigningInfo = System.getenv("SIGNING_KEYSTORE") != null && System.getenv("KEYSOTRE_PASSWORD")
@@ -9,20 +8,6 @@ String version = "0.0.0"
 
 if (project.hasProperty('projVersion')) {
     version = project.projVersion
-}
-
-def getInstrumentation() {
-    project.hasProperty('cucumber') ?
-            "" :
-            'androidx.test.runner.AndroidJUnitRunner'
-}
-
-def getTestTags() {
-    project.getProperties().get('tags') ?: ''
-}
-
-def getTestScenario() {
-    project.getProperties().get('scenario') ?: ''
 }
 
 android {
@@ -58,13 +43,7 @@ android {
         targetSdkVersion 30
         versionCode versionCodeString
         versionName version
-
-        buildConfigField 'String', 'TEST_TAGS', '"' + getTestTags() + '"'
-        buildConfigField 'String', 'TEST_SCENARIO', '"' + getTestScenario() + '"'
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-//        testInstrumentationRunner "com.zevrant.services.zevrantandroidapp.CucumberTestRunner"
     }
 
     signingConfigs {
@@ -125,7 +104,7 @@ android {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.2'
     String espressoVersion = '3.4.0'
     String workVersion = '2.6.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
@@ -145,7 +124,7 @@ dependencies {
     implementation 'org.bouncycastle:bcprov-jdk16:1.46'
     implementation 'net.openid:appauth:0.10.0'
 
-    testImplementation 'org.mockito:mockito-core:3.9.0'
+    testImplementation 'org.mockito:mockito-core:4.0.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation ("androidx.test.espresso:espresso-core:$espressoVersion")
@@ -157,41 +136,4 @@ dependencies {
     androidTestImplementation "androidx.work:work-testing:$workVersion"
 
     androidTestUtil 'androidx.test:orchestrator:1.4.0'
-}
-
-task pullReport(type: Exec) {
-    workingDir("$rootDir")
-    String adbCommand = System.getenv("ADB_COMMAND") ?: "adb"
-    executable(adbCommand)
-    args("-a", "pull", "/sdcard/Documents/cucumber-reports")
-}
-
-task clearTags(type: Exec) {
-    workingDir("$rootDir/app")
-    executable("sed")
-    args("-i", "s/tags = \".*\"/tags = \"\"/g", "src/androidTest/java/com/zevrant/services/zevrantandroidapp/test/CucumberTestCase.java")
-}
-
-task cleanRemoteReport(type: Exec) {
-    workingDir("$rootDir")
-    String adbCommand = System.getenv("ADB_COMMAND") ?: "adb"
-    executable(adbCommand)
-    args("shell", "rm -rf", "/sdcard/Documents/cucumber-reports/*")
-    ignoreExitValue true
-    setIgnoreExitValue(true)
-    finalizedBy(tasks.clearTags)
-}
-
-task setTags(type: Exec) {
-    workingDir("$rootDir/app")
-    executable("sed")
-    String tagListString = ""
-    if (project.hasProperty("tags")) {
-        String[] tagsArray = project.tags.split(",")
-        for (String tag : tagsArray) {
-            tagListString = tagListString.concat(tag).concat(",")
-        }
-        tagListString = tagListString.substring(0, tagListString.length() - 1).trim()
-    }
-    args("-i", "s/tags = \".*\"/tags = \"$tagListString\"/g", "src/androidTest/java/com/zevrant/services/zevrantandroidapp/test/CucumberTestCase.java")
 }

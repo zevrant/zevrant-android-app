@@ -5,7 +5,6 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 
-import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -16,7 +15,6 @@ import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
 import com.zevrant.services.zevrantandroidapp.test.BaseTest;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,12 +38,6 @@ public class LoginTest extends BaseTest {
     @Before
     public void setup() throws IOException, NoSuchFieldException, IllegalAccessException {
         super.setup();
-        Intents.init();
-    }
-
-    @After
-    public void tearDown() {
-        Intents.release();
     }
 
     @Test

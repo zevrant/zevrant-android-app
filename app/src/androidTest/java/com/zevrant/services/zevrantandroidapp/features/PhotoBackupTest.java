@@ -16,7 +16,6 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 
-import androidx.test.espresso.intent.Intents;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.work.ListenableWorker;
@@ -73,7 +72,6 @@ public class PhotoBackupTest extends BaseTest {
     @Before
     public void setup() throws IllegalAccessException, NoSuchFieldException, IOException {
         super.setup();
-        Intents.init();
 //        assertThat("Permission was not granted", ContextCompat.checkSelfPermission(getTargetContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE), is(PackageManager.PERMISSION_GRANTED));
         fileHash = "";
     }
@@ -81,7 +79,6 @@ public class PhotoBackupTest extends BaseTest {
     @After
     public void teardown() throws CredentialsNotFoundException {
         CleanupService.eraseBackups(CredentialsService.getAuthorization(), getTargetContext().getString(R.string.backup_base_url), getTestContext());
-        Intents.release();
     }
 
     @Test
