@@ -46,8 +46,9 @@ public class BaseTest {
         URL url = new URL("https://develop.zevrant-services.com" +
                 "/auth/realms/zevrant-services/protocol/openid-connect/token");
 
-        String urlParameters = "client_id=android&username=test-admin&password=".concat(URLEncoder.encode(Secrets.getPassword("test-admin"), String.valueOf(StandardCharsets.UTF_8)))
-                .concat("&grant_type=password&scope=openid");
+        String username = "test-admin";
+        String urlParameters = "client_id=android&username=".concat(username).concat("&password=").concat(URLEncoder.encode(Secrets.getPassword(username), String.valueOf(StandardCharsets.UTF_8)))
+                .concat("&grant_type=password");
 
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
         urlConnection.setDoOutput(true);
@@ -62,7 +63,7 @@ public class BaseTest {
         outputStream.flush();
         outputStream.close();
 
-        assertThat(urlConnection.getResponseCode(), is(200));
+        assertThat("Login failed for user ".concat(""), urlConnection.getResponseCode(), is(200));
         String response = "";
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
         StringBuilder responseBuilder = new StringBuilder();
