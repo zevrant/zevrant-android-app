@@ -5,10 +5,4 @@
     <string name="oauth_base_url">https://develop.zevrant-services.com/zevrant-oauth2-service</string>
     <string name="redirect_uri">https://android.develop.zevrant-services.com</string>
     <string name="reportsUrl">https://develop.zevrant-services.com/zevrant-acra-backend/reports</string>
-    <string name="s3BucketLocation">zevrant-apk-store</string>
-    <string name="artifactFolder">develop</string>
-    <string name="testUpdate">false</string>
-    <string name="reportsUsername">7DmnjRWqfqCtAXUl</string>
-    <string name="reportsPassword">Aa6bhIoN6owcRZOh</string>
-    <string name="manualServiceTesting">true</string>
 </resources>
