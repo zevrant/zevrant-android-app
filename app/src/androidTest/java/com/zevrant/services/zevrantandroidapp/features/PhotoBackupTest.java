@@ -33,8 +33,8 @@ import com.zevrant.services.zevrantandroidapp.services.CleanupService;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 import com.zevrant.services.zevrantandroidapp.test.BaseTest;
 import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
-import com.zevrant.services.zevrantuniversalcommon.rest.CheckExistence;
-import com.zevrant.services.zevrantuniversalcommon.rest.FileInfo;
+import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.CheckExistence;
+import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.FileInfo;
 
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.junit.After;

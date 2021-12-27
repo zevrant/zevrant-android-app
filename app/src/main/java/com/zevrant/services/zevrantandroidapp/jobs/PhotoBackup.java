@@ -25,9 +25,9 @@ import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 import com.zevrant.services.zevrantuniversalcommon.contants.Roles;
-import com.zevrant.services.zevrantuniversalcommon.rest.CheckExistence;
-import com.zevrant.services.zevrantuniversalcommon.rest.FileInfo;
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.BackupFileRequest;
+import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.CheckExistence;
+import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.FileInfo;
 
 import org.acra.ACRA;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;

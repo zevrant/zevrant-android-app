@@ -11,8 +11,8 @@ import com.android.volley.VolleyError;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.volley.requests.StringRequest;
-import com.zevrant.services.zevrantuniversalcommon.rest.CheckExistence;
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.BackupFileRequest;
+import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.CheckExistence;
 
 import org.acra.ACRA;
 
