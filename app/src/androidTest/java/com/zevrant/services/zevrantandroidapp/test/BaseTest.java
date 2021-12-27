@@ -89,5 +89,6 @@ public class BaseTest {
         assertThat("Decrypted access token does not match parsed token", token.getAccessToken(), is(parsedToken.getAccessToken()));
         assertThat("Decrypted refresh token does not match parsed token", token.getRefreshToken(), is(parsedToken.getRefreshToken()));
         assertThat("Decrypted expiration date time does not match parsed token", token.getExpirationDateTime(), is(parsedToken.getExpirationDateTime()));
+
     }
 }
