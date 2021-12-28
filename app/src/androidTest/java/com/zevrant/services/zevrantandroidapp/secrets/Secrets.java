@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class Secrets {
 
-    private static final Map<String,String> usernamePasswords = new HashMap<>();
+    private static final Map<String, String> usernamePasswords = new HashMap<>();
 
     public static String getPassword(String username) {
         return usernamePasswords.get(username);

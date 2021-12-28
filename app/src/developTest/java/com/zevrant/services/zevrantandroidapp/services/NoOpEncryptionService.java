@@ -9,12 +9,12 @@ import java.util.Map;
  */
 public class NoOpEncryptionService implements EncryptionServiceContract {
 
-    private static Map<String,String> sharedPreferences = new HashMap<>();
+    private static Map<String, String> sharedPreferences = new HashMap<>();
     private static String secretName;
 
     //You cannot access private key from tests only in the application
     public String getSecret(String secretName) {
-            return sharedPreferences.get(secretName);
+        return sharedPreferences.get(secretName);
     }
 
     @Override
@@ -23,7 +23,7 @@ public class NoOpEncryptionService implements EncryptionServiceContract {
     }
 
     public void setSecret(String secretName, String secretValue) {
-            sharedPreferences.put(secretName, secretValue);
+        sharedPreferences.put(secretName, secretValue);
     }
 
     public boolean hasSecret(String loginUserName) {

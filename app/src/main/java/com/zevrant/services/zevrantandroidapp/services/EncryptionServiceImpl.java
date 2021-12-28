@@ -68,6 +68,24 @@ public class EncryptionServiceImpl implements EncryptionServiceContract {
         }
     }
 
+    private static void checkInit() {
+        try {
+            if (!keyStore.containsAlias(RSA_ALIAS)) {
+                throw new RuntimeException("EncryptionService not initialized");
+            }
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String getEncryptedSecret(String secretName) throws CredentialsNotFoundException {
+        String encryptedString = sharedPreferences.getString(secretName, null);
+        if (StringUtils.isBlank(encryptedString)) {
+            throw new CredentialsNotFoundException("Credential for secret ".concat(secretName).concat(" could not be found"));
+        }
+        return encryptedString;
+    }
+
     public void createKeys() {
         try {
             if (!keyStore.containsAlias(RSA_ALIAS)) {
@@ -119,24 +137,6 @@ public class EncryptionServiceImpl implements EncryptionServiceContract {
             runtimeException.setStackTrace(e.getStackTrace());
             throw runtimeException;
         }
-    }
-
-    private static void checkInit() {
-        try {
-            if (!keyStore.containsAlias(RSA_ALIAS)) {
-                throw new RuntimeException("EncryptionService not initialized");
-            }
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static String getEncryptedSecret(String secretName) throws CredentialsNotFoundException {
-        String encryptedString = sharedPreferences.getString(secretName, null);
-        if (StringUtils.isBlank(encryptedString)) {
-            throw new CredentialsNotFoundException("Credential for secret ".concat(secretName).concat(" could not be found"));
-        }
-        return encryptedString;
     }
 
     public void setSecret(String secretName, String secretValue) {

@@ -13,8 +13,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class CredentialsService {
@@ -96,7 +94,7 @@ public class CredentialsService {
     private static void encryptTokenPart(String sectionName, String tokenPart) {
         int i = 0;
         int substringIndex;
-        for(substringIndex = 0; (substringIndex + 125) <= tokenPart.length(); substringIndex += 125) {
+        for (substringIndex = 0; (substringIndex + 125) <= tokenPart.length(); substringIndex += 125) {
             Log.d(LOG_TAG, "Stored".concat(sectionName.concat(Integer.toString(i))).concat(" with size ").concat(Integer.toString(tokenPart.substring(substringIndex, substringIndex + 125).length())));
             EncryptionService.setSecret(sectionName.concat(Integer.toString(i)), tokenPart.substring(substringIndex, substringIndex + 125));
             i++;
@@ -108,7 +106,7 @@ public class CredentialsService {
     private static String decryptTokenPart(String sectionName) {
         StringBuilder tokenBuilder = new StringBuilder();
         int i = 0;
-        while(EncryptionService.hasSecret(sectionName.concat(Integer.toString(i)))) {
+        while (EncryptionService.hasSecret(sectionName.concat(Integer.toString(i)))) {
             String secret = EncryptionService.getSecret(sectionName.concat(Integer.toString(i)));
             tokenBuilder.append(secret);
             Log.d(LOG_TAG, "Retrieved".concat(sectionName.concat(Integer.toString(i))).concat(" with size ").concat(Integer.toString(secret.length())));

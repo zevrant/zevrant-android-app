@@ -8,7 +8,7 @@ public class EncryptionService {
 
 
     public static void init(EncryptionServiceContract encryptionService) {
-        if(EncryptionService.encryptionService == null) {
+        if (EncryptionService.encryptionService == null) {
             EncryptionService.encryptionService = encryptionService;
             encryptionService.createKeys();
         }

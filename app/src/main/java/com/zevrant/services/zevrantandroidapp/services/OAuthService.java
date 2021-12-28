@@ -1,9 +1,6 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
-import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
-
 import android.content.Context;
-import android.util.Log;
 
 import com.android.volley.Request;
 import com.fasterxml.jackson.core.type.TypeReference;
