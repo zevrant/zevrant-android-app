@@ -34,14 +34,14 @@ android {
     } else {
         testBuildType 'developTest'
     }
-    int versionCodeString = (project.hasProperty("versionCode")) ? project.versionCode : 3
+    int versionCodeString = Integer.parseInt(project.hasProperty("versionCode") ? project.versionCode : '3')
     defaultConfig {
         applicationId "com.zevrant.services.zevrantandroidapp"
         testApplicationId "com.zevrant.services.zevrantandroidapp.test"
         manifestPlaceholders = [appAuthRedirectScheme: 'com.zevrant.services.zevrantandroidapp']
         minSdkVersion 28
         targetSdkVersion 30
-        versionCode Integer.parseInt(versionCodeString)
+        versionCode versionCodeString
         versionName version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
