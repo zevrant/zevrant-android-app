@@ -37,6 +37,7 @@ import com.zevrant.services.zevrantandroidapp.services.UpdateService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 
 import org.acra.ACRA;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.io.IOException;
@@ -77,6 +78,8 @@ public class ZevrantServices extends Activity {
     public void handleRedirect(Intent intent) {
         new Thread(() -> {
             if (intent != null && intent.getData() != null) {
+                String body = intent.getData().getQueryParameter("body");
+                assert StringUtils.isNotBlank(body) : "redirect body cannot be null";
                 String authBody = new String(
                         Base64.getDecoder().decode(
                                 intent.getData().getQueryParameter("body")), StandardCharsets.UTF_8);

@@ -43,7 +43,7 @@
 
                 <data
                     android:host="zevrant-services"
-                    android:pathPrefix="/"
+
                     android:scheme="zevrant" />
             </intent-filter>
         </activity>

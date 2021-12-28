@@ -78,59 +78,70 @@ public class CredentialsService {
     private static void encryptToken(OAuthToken oAuthToken) {
         String[] tokenPieces = oAuthToken.getAccessToken().split("\\.");
         String[] refreshTokenPieces = oAuthToken.getRefreshToken().split("\\.");
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_1, tokenPieces[0]);
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_2, tokenPieces[1].substring(0, 125));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_3, tokenPieces[1].substring(125, 250));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_4, tokenPieces[1].substring(250, 375));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_5, tokenPieces[1].substring(375, 500));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_6, tokenPieces[1].substring(500, 625));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_7, tokenPieces[1].substring(625, 750));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_8, tokenPieces[1].substring(750));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_11, tokenPieces[2].substring(0, 125));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_12, tokenPieces[2].substring(125, 250));
-        EncryptionService.setSecret(Constants.SecretNames.TOKEN_13, tokenPieces[2].substring(250));
+        EncryptionService.setSecret(Constants.SecretNames.TOKEN_0, tokenPieces[0]);
+        encryptTokenPart("token-sec1-", tokenPieces[1]);
+        encryptTokenPart("token-sec2-", tokenPieces[2]);
+
         EncryptionService.setSecret(Constants.SecretNames.TOKEN_EXPIRATION, oAuthToken.getExpirationDateTime().toString());
+
         EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_1, refreshTokenPieces[0]);
-        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_2, refreshTokenPieces[1].substring(0, 125));
-        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_3, refreshTokenPieces[1].substring(125, 250));
-        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_4, refreshTokenPieces[1].substring(250, 375));
-        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_5, refreshTokenPieces[1].substring(375, 500));
-        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_6, refreshTokenPieces[1].substring(500));
-        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_7, refreshTokenPieces[2]);
+
+        encryptTokenPart("refresh-token-sec1-", refreshTokenPieces[1]);
+
+        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_2, refreshTokenPieces[2]);
+
+        EncryptionService.setSecret(Constants.SecretNames.REFRESH_TOKEN_EXPIRATION, oAuthToken.getRefreshExpiresInDateTime().toString());
+    }
+
+    private static void encryptTokenPart(String sectionName, String tokenPart) {
+        int i = 0;
+        int substringIndex;
+        for(substringIndex = 0; (substringIndex + 125) <= tokenPart.length(); substringIndex += 125) {
+            Log.d(LOG_TAG, "Stored".concat(sectionName.concat(Integer.toString(i))).concat(" with size ").concat(Integer.toString(tokenPart.substring(substringIndex, substringIndex + 125).length())));
+            EncryptionService.setSecret(sectionName.concat(Integer.toString(i)), tokenPart.substring(substringIndex, substringIndex + 125));
+            i++;
+        }
+        EncryptionService.setSecret(sectionName.concat(Integer.toString(i)), tokenPart.substring(substringIndex));
+        Log.d(LOG_TAG, "Stored ".concat(Integer.toString(i)).concat(" parts for ").concat(sectionName).concat(" with size ".concat(Integer.toString(tokenPart.length()))));
+    }
+
+    private static String decryptTokenPart(String sectionName) {
+        StringBuilder tokenBuilder = new StringBuilder();
+        int i = 0;
+        while(EncryptionService.hasSecret(sectionName.concat(Integer.toString(i)))) {
+            String secret = EncryptionService.getSecret(sectionName.concat(Integer.toString(i)));
+            tokenBuilder.append(secret);
+            Log.d(LOG_TAG, "Retrieved".concat(sectionName.concat(Integer.toString(i))).concat(" with size ").concat(Integer.toString(secret.length())));
+            i++;
+        }
+        Log.d(LOG_TAG, "Retrieved ".concat(Integer.toString(i - 1)).concat(" parts for ").concat(sectionName).concat(" with size ".concat(Integer.toString(tokenBuilder.toString().length()))));
+        return tokenBuilder.toString();
     }
 
     private static OAuthToken decryptToken() {
-        List<String> tokenPieces = new ArrayList<>();
-        List<String> refreshTokenPieces = new ArrayList<>();
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_1));
-        tokenPieces.add(".");
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_2));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_3));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_4));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_5));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_6));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_7));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_8));
-        tokenPieces.add(".");
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_11));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_12));
-        tokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.TOKEN_13));
-        refreshTokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_1));
-        refreshTokenPieces.add(".");
-        refreshTokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_2));
-        refreshTokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_3));
-        refreshTokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_4));
-        refreshTokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_5));
-        refreshTokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_6));
-        refreshTokenPieces.add(".");
-        refreshTokenPieces.add(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_7));
+        StringBuilder tokenPieces = new StringBuilder();
+        StringBuilder refreshTokenPieces = new StringBuilder();
+        tokenPieces.append(EncryptionService.getSecret(Constants.SecretNames.TOKEN_0));
+        tokenPieces.append(".");
+        tokenPieces.append(decryptTokenPart("token-sec1-"));
+        tokenPieces.append(".");
+        tokenPieces.append(decryptTokenPart("token-sec2-"));
+        refreshTokenPieces.append(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_1));
+        refreshTokenPieces.append(".");
+        refreshTokenPieces.append(decryptTokenPart("refresh-token-sec1-"));
+        refreshTokenPieces.append(".");
+        refreshTokenPieces.append(EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_2));
         OAuthToken oAuthToken = new OAuthToken();
-        oAuthToken.setAccessToken(tokenPieces.stream().reduce((accumulator, combiner) -> accumulator = accumulator.concat(combiner)).orElseThrow(() -> new RuntimeException("failed to join access token")));
-        oAuthToken.setRefreshToken(refreshTokenPieces.stream().reduce((accumulator, combiner) -> accumulator = accumulator.concat(combiner)).orElseThrow(() -> new RuntimeException("failed to join refresh token")));
+        oAuthToken.setAccessToken(tokenPieces.toString());
+        oAuthToken.setRefreshToken(refreshTokenPieces.toString());
         String time = EncryptionService.getSecret(Constants.SecretNames.TOKEN_EXPIRATION);
+        String refreshTime = EncryptionService.getSecret(Constants.SecretNames.REFRESH_TOKEN_EXPIRATION);
         oAuthToken.setExpiresInDateTime(LocalDateTime.parse(time));
+        oAuthToken.setRefreshExpiresInDateTime(LocalDateTime.parse(refreshTime));
         long expiresIn = LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - oAuthToken.getExpirationDateTime().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now()));
-        oAuthToken.setExpiresIn(expiresIn);
+        long refreshExpiresIn = LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - oAuthToken.getRefreshExpiresInDateTime().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now()));
+        oAuthToken.setExpiresIn(Math.abs(expiresIn));
+        oAuthToken.setRefreshExpiresIn(Math.abs(refreshExpiresIn));
         return oAuthToken;
     }
 

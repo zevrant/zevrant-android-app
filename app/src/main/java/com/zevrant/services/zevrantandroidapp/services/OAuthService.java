@@ -1,6 +1,9 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
+import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
+
 import android.content.Context;
+import android.util.Log;
 
 import com.android.volley.Request;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -56,8 +59,9 @@ public class OAuthService {
         String response = future.get();
         assert StringUtils.isNotBlank(response);
         OAuthToken token = JsonParser.readValueFromString(response, OAuthToken.class);
-        assert token != null;
+        assert token != null : "token parsed from string was null";
         token.setExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - token.getExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
+        token.setRefreshExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - token.getRefreshExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
         return token;
     }
 
@@ -75,6 +79,7 @@ public class OAuthService {
         OAuthToken token = JsonParser.readValueFromString(response, OAuthToken.class);
         assert token != null;
         token.setExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) + token.getExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
+        token.setRefreshExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - token.getRefreshExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
         return token;
     }
 

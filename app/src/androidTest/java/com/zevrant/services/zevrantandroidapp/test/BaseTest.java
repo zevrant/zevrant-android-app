@@ -77,6 +77,7 @@ public class BaseTest {
         OAuthToken parsedToken = JsonParser.readValueFromString(response, OAuthToken.class);
         assertThat("Parsed token is null", parsedToken, is(not(nullValue())));
         parsedToken.setExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - parsedToken.getExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
+        parsedToken.setRefreshExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - parsedToken.getRefreshExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
         assertThat("Parsed OAuth token did not contain a access token.", StringUtils.isNotBlank(parsedToken.getAccessToken()), is(true));
         CredentialsService.manageOAuthToken(parsedToken, true);
         OAuthToken token = CredentialsService.manageOAuthToken(null, false);
