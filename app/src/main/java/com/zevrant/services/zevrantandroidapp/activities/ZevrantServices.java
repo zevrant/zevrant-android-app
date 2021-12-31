@@ -5,6 +5,7 @@ import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -58,8 +59,14 @@ public class ZevrantServices extends Activity {
         initServices(getApplicationContext());
         getApplicationContext().getSystemService(AutofillManager.class)
                 .disableAutofillServices();
-
         handleRedirect(getIntent());
+//    PendingIntent.getActivity(
+//                getApplicationContext(),
+//                0,
+//                getIntent(),
+//                PendingIntent.FLAG_IMMUTABLE
+//        ));
+
         setContentView(R.layout.activity_main);
         initViewGlue();
         checkPermissions();
@@ -77,6 +84,7 @@ public class ZevrantServices extends Activity {
 
     public void handleRedirect(Intent intent) {
         new Thread(() -> {
+
             if (intent != null && intent.getData() != null) {
                 String body = intent.getData().getQueryParameter("body");
                 assert StringUtils.isNotBlank(body) : "redirect body cannot be null";

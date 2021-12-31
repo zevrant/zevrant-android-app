@@ -11,7 +11,7 @@ if (project.hasProperty('projVersion')) {
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     buildToolsVersion "30.0.3"
 
     testOptions {
@@ -106,18 +106,17 @@ android {
 dependencies {
     testImplementation 'junit:junit:4.13.2'
     String espressoVersion = '3.4.0'
-    String workVersion = '2.6.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     def nav_version = "2.3.5"
     implementation 'com.zevrant.services:zevrant-universal-common:4'
     implementation 'commons-codec:commons-codec:1.15'
-    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'androidx.appcompat:appcompat:1.4.0'
     implementation 'com.google.android.material:material:1.4.0'
-    implementation "androidx.work:work-runtime:$workVersion"
+    implementation "androidx.work:work-runtime:2.7.1"
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.android.volley:volley:1.2.1'
-    implementation('com.fasterxml.jackson.core:jackson-databind:2.12.5') { transitive = true }
+    implementation('com.fasterxml.jackson.core:jackson-databind:2.13.0') { transitive = true }
     implementation "androidx.navigation:navigation-fragment:$nav_version"
     implementation "androidx.navigation:navigation-ui:$nav_version"
     implementation "ch.acra:acra-http:5.7.0"
@@ -133,7 +132,7 @@ dependencies {
     androidTestImplementation 'androidx.test:core:1.4.0'
     androidTestImplementation 'androidx.test:rules:1.4.0'
     androidTestImplementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.3'
-    androidTestImplementation "androidx.work:work-testing:$workVersion"
+    androidTestImplementation "androidx.work:work-testing:2.7.1"
 
-    androidTestUtil 'androidx.test:orchestrator:1.4.0'
+    androidTestUtil 'androidx.test:orchestrator:1.4.1'
 }
