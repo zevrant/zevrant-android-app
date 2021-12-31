@@ -40,7 +40,7 @@ android {
         testApplicationId "com.zevrant.services.zevrantandroidapp.test"
         manifestPlaceholders = [appAuthRedirectScheme: 'com.zevrant.services.zevrantandroidapp']
         minSdkVersion 28
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode versionCodeString
         versionName version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
