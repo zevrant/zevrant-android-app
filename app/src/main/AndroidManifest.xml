@@ -32,7 +32,8 @@
         <!-- android:theme="@style/Theme.ZevrantAndroidApp.NoActionBar" /> -->
         <activity
             android:name=".activities.ZevrantServices"
-            android:label="@string/title_activity_main">
+            android:label="@string/title_activity_main"
+            android:exported="true">
             <intent-filter tools:ignore="AppLinkUrlError">
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="android.intent.action.VIEW" />
