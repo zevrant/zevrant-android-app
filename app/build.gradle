@@ -39,7 +39,7 @@ android {
         applicationId "com.zevrant.services.zevrantandroidapp"
         testApplicationId "com.zevrant.services.zevrantandroidapp.test"
         manifestPlaceholders = [appAuthRedirectScheme: 'com.zevrant.services.zevrantandroidapp']
-        minSdkVersion 28
+        minSdkVersion 31
         targetSdkVersion 31
         versionCode versionCodeString
         versionName version
