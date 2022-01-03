@@ -115,4 +115,6 @@
     </string>
     <string name="action_settings">Settings</string>
     <string name="media_retrieval_error">Failed to retrieve media, check your internet connection and try again.</string>
+    <string name="media_viewer_desc">Open Media Viewer</string>
+    <string name="login_desc">Button to initiate login process</string>
 </resources>

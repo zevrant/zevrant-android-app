@@ -5,35 +5,35 @@
     android:id="@+id/mainLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activities.ZevrantServices">
+    tools:context=".activities.ZevrantServices"
+    android:background="@color/grey_angular"
+    android:theme="@style/Theme.ZevrantAndroidApp">
+
 
     <WebView
         android:id="@+id/login_web_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="invisible" />
+        android:visibility="invisible"
+        android:backgroundTint="@color/grey_angular">
+    </WebView>
 
-    <com.google.android.material.bottomappbar.BottomAppBar
-        android:id="@+id/mainActivityBottomAppBar"
-        style="@style/Widget.MaterialComponents.BottomAppBar.Colored"
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/mainNavView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_marginStart="4dp"
-        android:layout_marginBottom="4dp"
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        tools:ignore="BottomAppBar"
-        tools:visibility="visible">
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible"
+        android:theme="@style/Theme.ZevrantAndroidApp"
+        app:menu="@menu/main_menu"
+        app:backgroundTint="@color/purple_angular"
+        app:itemIconTint="@color/white"
+        app:itemTextColor="@color/white">
 
-        <Button
-            android:id="@+id/loginButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/login"
-            tools:layout_editor_absoluteX="224dp"
-            tools:layout_editor_absoluteY="220dp" />
-    </com.google.android.material.bottomappbar.BottomAppBar>
+    </com.google.android.material.bottomnavigation.BottomNavigationView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,9 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/loginButton"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_login_24"
+        android:iconTint="@null"
+        android:visible="true"
+        android:title="@string/login" />
+</menu>

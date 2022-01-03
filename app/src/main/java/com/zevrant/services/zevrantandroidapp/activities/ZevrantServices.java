@@ -4,8 +4,6 @@ import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -16,14 +14,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.autofill.AutofillManager;
 import android.webkit.WebView;
-import android.widget.Button;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.work.Constraints;
 import androidx.work.Data;
 
-import com.google.android.material.bottomappbar.BottomAppBar;
+import com.google.android.material.bottomnavigation.BottomNavigationItemView;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.pojo.AuthBody;
@@ -47,12 +46,11 @@ import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public class ZevrantServices extends Activity {
+public class ZevrantServices extends AppCompatActivity {
 
-    private Button loginButton;
-    private BottomAppBar bottomAppBar;
+    private BottomNavigationItemView loginButton;
+    private BottomNavigationView mainNavView;
     private WebView loginWebView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,13 +58,6 @@ public class ZevrantServices extends Activity {
         getApplicationContext().getSystemService(AutofillManager.class)
                 .disableAutofillServices();
         handleRedirect(getIntent());
-//    PendingIntent.getActivity(
-//                getApplicationContext(),
-//                0,
-//                getIntent(),
-//                PendingIntent.FLAG_IMMUTABLE
-//        ));
-
         setContentView(R.layout.activity_main);
         initViewGlue();
         checkPermissions();
@@ -121,22 +112,23 @@ public class ZevrantServices extends Activity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void initViewGlue() {
-        bottomAppBar = findViewById(R.id.mainActivityBottomAppBar);
+        mainNavView = findViewById(R.id.mainNavView);
         loginButton = findViewById(R.id.loginButton);
         loginWebView = findViewById(R.id.login_web_view);
 
 //        if(BuildConfig.BUILD_TYPE.equals("developTest")) {
         loginWebView.getSettings().setJavaScriptEnabled(true);
+        loginWebView.getSettings().setDomStorageEnabled(true);
 //        }
         loginButton.setOnClickListener((view) -> {
             loginWebView.loadUrl(new Uri.Builder()
                     .scheme("https")
-                    .encodedAuthority("develop.zevrant-services.com")
+                    .encodedAuthority(getString(R.string.encoded_authority))
                     .path("/auth/realms/zevrant-services/protocol/openid-connect/auth")
                     .appendQueryParameter("client_id", "android")
                     .appendQueryParameter("scope", "openid")
                     .appendQueryParameter("response_type", "code")
-                    .appendQueryParameter("redirect_uri", "https://android.develop.zevrant-services.com")
+                    .appendQueryParameter("redirect_uri", getString(R.string.redirect_uri))
                     .build().toString());
             loginWebView.setVisibility(View.VISIBLE);
 //            startActivity(new Intent(Intent.ACTION_VIEW, new Uri.Builder()
@@ -195,8 +187,8 @@ public class ZevrantServices extends Activity {
     }
 
     private void updateBottomAppBar() {
-        if (!hasAtLeastOneVisibleChild(bottomAppBar)) {
-            bottomAppBar.setVisibility(View.INVISIBLE);
+        if (!hasAtLeastOneVisibleChild(mainNavView)) {
+            mainNavView.setVisibility(View.INVISIBLE);
         }
     }
 
