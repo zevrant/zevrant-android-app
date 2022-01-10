@@ -1,6 +1,9 @@
 package com.zevrant.services.zevrantandroidapp.services;
 
+import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
+
 import android.content.Context;
+import android.util.Log;
 
 import com.android.volley.Request;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -36,14 +39,15 @@ public class OAuthService {
         roles = new ArrayList<>();
     }
 
-    public static boolean canI(Roles action) {
+    public static boolean canI(Roles action, Context context) {
         if (roles.isEmpty()) {
-            loadRoles();
+            loadRoles(context);
         }
         return roles.contains(action.name().toLowerCase());
     }
 
     public static OAuthToken exchangeCode(String code) throws ExecutionException, InterruptedException {
+        String url = keycloakUrl;
         CodeExchangeRequest codeExchangeRequest = new CodeExchangeRequest(code, redirectUri);
         CompletableFuture<String> future = new CompletableFuture<>();
         StringRequest request = new StringRequest(Request.Method.POST,
@@ -62,7 +66,7 @@ public class OAuthService {
         return token;
     }
 
-    public static OAuthToken refreshToken(OAuthToken oAuthToken) throws ExecutionException, InterruptedException {
+    public static OAuthToken refreshToken(OAuthToken oAuthToken) throws ExecutionException, InterruptedException, CredentialsNotFoundException {
         TokenRefreshRequest refreshRequest = new TokenRefreshRequest(oAuthToken.getRefreshToken());
         CompletableFuture<String> future = new CompletableFuture<>();
         StringRequest request = new StringRequest(Request.Method.POST,
@@ -73,14 +77,19 @@ public class OAuthService {
         );
         RequestQueueService.addToQueue(request);
         String response = future.get();
+        if(StringUtils.isBlank(response) || response.contains("FAILURE")) {
+            throw new CredentialsNotFoundException("Failed to refresh token token invalid");
+        }
         OAuthToken token = JsonParser.readValueFromString(response, OAuthToken.class);
-        assert token != null;
+
+        assert token != null: "Refreshed token is Null";
+        assert !oAuthToken.getRefreshToken().equals(token.getRefreshToken()): "Refresh token was not updated!";
         token.setExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) + token.getExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
         token.setRefreshExpiresInDateTime(LocalDateTime.ofEpochSecond(LocalDateTime.now().toEpochSecond(ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())) - token.getRefreshExpiresIn(), 0, ZoneId.of("US/Eastern").getRules().getOffset(LocalDateTime.now())));
         return token;
     }
 
-    public static void loadRoles() {
+    public static void loadRoles(Context context) {
         CompletableFuture<String> future = new CompletableFuture<>();
         StringRequest request = new StringRequest(Request.Method.GET,
                 oauthUrl.concat("/users/me/roles"),
@@ -89,7 +98,7 @@ public class OAuthService {
                 DefaultRequestHandlers.getErrorResponseListener(future)
         );
         try {
-            request.setOAuthToken(CredentialsService.getAuthorization());
+            request.setOAuthToken(CredentialsService.getAuthorization(context));
             RequestQueueService.addToQueue(request);
             roles = JsonParser.readValueFromString(future.get(), new TypeReference<>() {
             });

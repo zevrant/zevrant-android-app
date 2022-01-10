@@ -166,4 +166,10 @@ public class EncryptionServiceImpl implements EncryptionServiceContract {
     public boolean hasSecret(String loginUserName) {
         return sharedPreferences.contains(loginUserName);
     }
+
+    public boolean deleteSecret(String secretName) {
+        return sharedPreferences.edit()
+                .remove(secretName)
+                .commit();
+    }
 }

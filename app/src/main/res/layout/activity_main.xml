@@ -9,14 +9,13 @@
     android:background="@color/grey_angular"
     android:theme="@style/Theme.ZevrantAndroidApp">
 
-
-    <WebView
-        android:id="@+id/login_web_view"
+    <androidx.fragment.app.FragmentContainerView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="invisible"
-        android:backgroundTint="@color/grey_angular">
-    </WebView>
+        android:layout_marginBottom="56dp"
+        android:id="@+id/mainView">
+
+    </androidx.fragment.app.FragmentContainerView>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/mainNavView"

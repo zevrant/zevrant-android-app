@@ -2,8 +2,10 @@ package com.zevrant.services.zevrantandroidapp.services;
 
 import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
 
+import android.content.Context;
 import android.util.Log;
 
+import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 import com.zevrant.services.zevrantuniversalcommon.rest.oauth.response.OAuthToken;
@@ -36,7 +38,7 @@ public class CredentialsService {
         return CredentialsService.oAuthToken;
     }
 
-    public static String getAuthorization() throws CredentialsNotFoundException {
+    public static String getAuthorization(Context context) throws CredentialsNotFoundException {
         if (oAuthToken == null) {
             if (EncryptionService.hasSecret(Constants.SecretNames.REFRESH_TOKEN_1)) {
                 OAuthToken oauthtoken = decryptToken();
@@ -47,7 +49,7 @@ public class CredentialsService {
         }
 
         if (isTokenExpired()) {
-            getNewOAuthToken();
+            getNewOAuthToken(context);
         }
         if (oAuthToken.getAccessToken() == null) {
             throw new CredentialsNotFoundException("Oauth Service returned an oauth token without the actual token");
@@ -55,17 +57,19 @@ public class CredentialsService {
         return oAuthToken.getAccessToken();
     }
 
-    private static void getNewOAuthToken() {
+    private static void getNewOAuthToken(Context context) throws CredentialsNotFoundException {
         try {
             OAuthToken oAuthToken = OAuthService.refreshToken(manageOAuthToken(null, false));
             manageOAuthToken(oAuthToken, true);
-            OAuthService.loadRoles();
+            OAuthService.loadRoles(context);
             Log.d("Successfuly refreshed token", LOG_TAG);
         } catch (ExecutionException | InterruptedException e) {
             Log.e(LOG_TAG, ExceptionUtils.getStackTrace(e));
             RuntimeException runtimeException = new RuntimeException(e.getMessage());
             runtimeException.setStackTrace(e.getStackTrace());
             throw runtimeException;
+        } catch (CredentialsNotFoundException ex) {
+            ZevrantServices.switchToLogin(context);
         }
     }
 
@@ -143,4 +147,22 @@ public class CredentialsService {
         return oAuthToken;
     }
 
+    public static void clearAuth() {
+        EncryptionService.deleteSecret(Constants.SecretNames.TOKEN_0);
+        deleteTokenPart("token-sec1-");
+        deleteTokenPart("token-sec2-");
+        EncryptionService.deleteSecret(Constants.SecretNames.TOKEN_EXPIRATION);
+        EncryptionService.deleteSecret(Constants.SecretNames.REFRESH_TOKEN_1);
+        deleteTokenPart("refresh-token-sec1-");
+        EncryptionService.deleteSecret(Constants.SecretNames.REFRESH_TOKEN_2);
+        EncryptionService.deleteSecret(Constants.SecretNames.REFRESH_TOKEN_EXPIRATION);
+        CredentialsService.oAuthToken = null;
+    }
+
+    private static void deleteTokenPart(String sectionName) {
+        int i = 0;
+        while (EncryptionService.hasSecret(sectionName.concat(Integer.toString(i)))) {
+            EncryptionService.deleteSecret(sectionName.concat(Integer.toString(i)));
+        }
+    }
 }

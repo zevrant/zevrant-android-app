@@ -34,8 +34,9 @@ import com.zevrant.services.zevrantandroidapp.test.BaseTest;
 import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.CheckExistence;
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.FileInfo;
+import com.zevrant.services.zevrantuniversalcommon.services.ChecksumService;
+import com.zevrant.services.zevrantuniversalcommon.services.HexConversionService;
 
-import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,7 +47,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -64,6 +64,7 @@ public class PhotoBackupTest extends BaseTest {
     public ActivityScenarioRule<ZevrantServices> activityRule
             = new ActivityScenarioRule<>(ZevrantServices.class);
     private String fileHash;
+    private ChecksumService checksumService;
 
 //    @Rule
 //    @JvmField
@@ -74,11 +75,12 @@ public class PhotoBackupTest extends BaseTest {
         super.setup();
 //        assertThat("Permission was not granted", ContextCompat.checkSelfPermission(getTargetContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE), is(PackageManager.PERMISSION_GRANTED));
         fileHash = "";
+        checksumService = new ChecksumService(new HexConversionService());
     }
 
     @After
     public void teardown() throws CredentialsNotFoundException {
-        CleanupService.eraseBackups(CredentialsService.getAuthorization(), getTargetContext().getString(R.string.backup_base_url), getTestContext());
+        CleanupService.eraseBackups(CredentialsService.getAuthorization(getTargetContext()), getTargetContext().getString(R.string.backup_base_url), getTestContext());
     }
 
     @Test
@@ -94,7 +96,7 @@ public class PhotoBackupTest extends BaseTest {
         CheckExistence checkExistence = new CheckExistence();
         checkExistence.setFileInfos(Collections.singletonList(new FileInfo("human.jpg", fileHash, 0L, 0L)));
         Future<String> future =
-                BackupService.getAlllHashes();
+                BackupService.getAlllHashes(context);
         String responseString = future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
         ObjectMapper objectMapper = new ObjectMapper();
         List<String> hashes = objectMapper.readValue(responseString, new TypeReference<>() {
@@ -106,7 +108,6 @@ public class PhotoBackupTest extends BaseTest {
 
     private void verifyPhotoAdded() throws IOException, NoSuchAlgorithmException {
         Context context = getTargetContext();
-        Context testContext = getTestContext();
         final String[] projection = new String[]{
                 MediaStore.Images.Media._ID,
                 MediaStore.Images.Media.DISPLAY_NAME,
@@ -127,14 +128,12 @@ public class PhotoBackupTest extends BaseTest {
             assertThat("Negative column value", idColumn, is(greaterThan(-1)));
             long id = cursor.getLong(idColumn);
 
-            MessageDigest digest = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_512);
-
             InputStream is = context
                     .getContentResolver()
                     .openAssetFileDescriptor(ContentUris.withAppendedId(uri, id), "r")
                     .createInputStream();
 
-            fileHash = PhotoBackup.getChecksum(digest, is);
+            fileHash = checksumService.getSha512Checksum(is);
             assertThat(fileHash, is(not(nullValue())));
         }
     }

@@ -117,4 +117,9 @@
     <string name="media_retrieval_error">Failed to retrieve media, check your internet connection and try again.</string>
     <string name="media_viewer_desc">Open Media Viewer</string>
     <string name="login_desc">Button to initiate login process</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="account">Account</string>
 </resources>

@@ -29,4 +29,9 @@ public class NoOpEncryptionService implements EncryptionServiceContract {
     public boolean hasSecret(String loginUserName) {
         return sharedPreferences.containsKey(loginUserName);
     }
+
+    @Override
+    public boolean deleteSecret(String secretName) {
+        return sharedPreferences.remove(secretName) != null;
+    }
 }

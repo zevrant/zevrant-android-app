@@ -2,7 +2,10 @@ package com.zevrant.services.zevrantandroidapp.volley.requests;
 
 import androidx.annotation.Nullable;
 
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
 import com.android.volley.Response;
+import com.android.volley.RetryPolicy;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,6 +24,7 @@ public class StringRequest extends com.android.volley.toolbox.StringRequest {
         this.headers = new HashMap<>();
         this.params = new HashMap<>();
         this.setContentType("application/json");
+        this.setTimeout(10000);
     }
 
     public StringRequest(int method, String url, String body, Response.Listener<String> listener, @Nullable Response.ErrorListener errorListener) {
@@ -66,6 +70,10 @@ public class StringRequest extends com.android.volley.toolbox.StringRequest {
     public String getBodyContentType() {
         String contentType = headers.get("Content-Type");
         return StringUtils.isNotBlank(contentType) ? contentType : "application/json";
+    }
+
+    public void setTimeout(int timeoutInMs ) {
+        super.setRetryPolicy(new DefaultRetryPolicy(timeoutInMs, 3, 3));
     }
 }
 

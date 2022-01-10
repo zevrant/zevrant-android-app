@@ -92,6 +92,10 @@ public class DefaultRequestHandlers {
         return future::complete;
     }
 
+    public static Response.Listener<InputStream> getResponseListenerStream(CompletableFuture<InputStream> future) {
+        return future::complete;
+    }
+
     private static Object getErrorData(Data data, Class<?> clazz) {
         switch (clazz.getName()) {
             case "java.lang.String":

@@ -10,4 +10,6 @@ public interface EncryptionServiceContract {
     void setSecret(String secretName, String secretValue);
 
     boolean hasSecret(String loginUserName);
+
+    boolean deleteSecret(String secretName);
 }

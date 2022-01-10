@@ -109,14 +109,14 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     def nav_version = "2.3.5"
-    implementation 'com.zevrant.services:zevrant-universal-common:4'
+    implementation 'com.zevrant.services:zevrant-universal-common:8'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'androidx.appcompat:appcompat:1.4.0'
     implementation 'com.google.android.material:material:1.4.0'
     implementation "androidx.work:work-runtime:2.7.1"
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'com.android.volley:volley:1.2.1'
-    implementation('com.fasterxml.jackson.core:jackson-databind:2.13.0') { transitive = true }
+    implementation('com.fasterxml.jackson.core:jackson-databind:2.13.1') { transitive = true }
     implementation "androidx.navigation:navigation-fragment:$nav_version"
     implementation "androidx.navigation:navigation-ui:$nav_version"
     implementation "ch.acra:acra-http:5.7.0"

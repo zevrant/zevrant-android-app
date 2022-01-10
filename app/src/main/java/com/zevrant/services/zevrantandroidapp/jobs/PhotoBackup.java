@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
+import com.zevrant.services.zevrantandroidapp.services.HashingService;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
@@ -30,10 +31,13 @@ import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.CheckExis
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.FileInfo;
 
 import org.acra.ACRA;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -59,15 +63,6 @@ public class PhotoBackup extends ListenableWorker {
         this.dataBuilder = new Data.Builder();
     }
 
-    public static String getChecksum(MessageDigest digest, InputStream is) throws IOException {
-        byte[] bytes = new byte[1024];
-        while (is.read(bytes) > -1) {
-            digest.update(bytes);
-        }
-
-        return JobUtilities.bytesToHex(digest.digest());
-    }
-
     @NonNull
     @Override
     public ListenableFuture<Result> startWork() {
@@ -80,7 +75,7 @@ public class PhotoBackup extends ListenableWorker {
             return mFuture;
         }
         getBackgroundExecutor().execute(() -> {
-            boolean hasBackupPermission = OAuthService.canI(Roles.BACKUPS);
+            boolean hasBackupPermission = OAuthService.canI(Roles.BACKUPS, context);
             if (!hasBackupPermission) {
                 dataBuilder.putString("reason", "user does not have permission to access backups");
                 mFuture.set(Result.failure(dataBuilder.build()));
@@ -115,7 +110,7 @@ public class PhotoBackup extends ListenableWorker {
 
     private void backupFiles(List<FileInfo> fileInfoList, Uri uri) throws CredentialsNotFoundException, ExecutionException, InterruptedException {
         Log.i(LOG_TAG, String.valueOf(fileInfoList.size()).concat(" images hashed"));
-        Future<String> checkExistenceResponse = BackupService.checkExistence(new CheckExistence(fileInfoList));
+        Future<String> checkExistenceResponse = BackupService.checkExistence(new CheckExistence(fileInfoList), context);
         CheckExistence existence = JsonParser.readValueFromString(checkExistenceResponse.get(), CheckExistence.class);
         assert existence != null : "null value returned from existence check for photo backup";
         assert existence.getFileInfos() != null : "null was returned for list of fileinfos in photobackup";
@@ -135,10 +130,10 @@ public class PhotoBackup extends ListenableWorker {
     }
 
     private void sendBackUp(FileInfo fileInfo, Uri uri) throws IOException, CredentialsNotFoundException, ExecutionException, InterruptedException {
-        BackupFileRequest backupFileRequest = new BackupFileRequest(fileInfo, JobUtilities.bytesToHex(getFileBytes(uri, fileInfo)));
+        BackupFileRequest backupFileRequest = new BackupFileRequest(fileInfo, new String(Base64.encodeBase64(getFileBytes(uri, fileInfo))));
         Log.i(LOG_TAG, backupFileRequest.toString());
         Log.i(LOG_TAG, "backing up file ".concat(fileInfo.getFileName()));
-        Future<String> future = BackupService.backupFile(backupFileRequest);
+        Future<String> future = BackupService.backupFile(backupFileRequest, context);
         future.get();//don't really care about successfull responses just need to block until done otherwise we
         // will enqueue too many requests and throw an OOM exception
         Log.i(LOG_TAG, fileInfo.getFileName().concat(" was successfully backed up"));
@@ -163,12 +158,15 @@ public class PhotoBackup extends ListenableWorker {
         long size = cursor.getLong(sizeColumn);
         MessageDigest digest = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_512);
 
-        InputStream is = getApplicationContext()
-                .getContentResolver()
+        InputStream is = getApplicationContext().getContentResolver()
                 .openAssetFileDescriptor(ContentUris.withAppendedId(uri, id), "r")
                 .createInputStream();
-        String hash = getChecksum(digest, is);
-        fileInfoList.add(new FileInfo(name, hash, id, size));
+        String hash = HashingService.getSha512Checksum(is);
+        if(StringUtils.isBlank(hash)) {
+            Log.i(LOG_TAG,"Not adding file info, hash was blank");
+        } else {
+            fileInfoList.add(new FileInfo(name, hash, id, size));
+        }
         // Stores column values and the contentUri in a local object
         // that represents the media file.
         is.close();

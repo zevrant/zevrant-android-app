@@ -31,4 +31,8 @@ public class EncryptionService {
     public static boolean isInitialized() {
         return encryptionService != null;
     }
+
+    public static void deleteSecret(String secretName) {
+        encryptionService.deleteSecret(secretName);
+    }
 }
