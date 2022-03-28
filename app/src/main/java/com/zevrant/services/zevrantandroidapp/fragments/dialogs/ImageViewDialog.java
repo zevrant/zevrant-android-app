@@ -22,7 +22,11 @@ import org.acra.ACRA;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
+
+import javax.inject.Inject;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -33,11 +37,11 @@ public class ImageViewDialog extends DialogFragment {
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM1 = "image";
 
     // TODO: Rename and change types of parameters
-    private String mParam1;
-
+    private byte[] mParam1;
+    private BackupService backupService;
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
@@ -46,10 +50,10 @@ public class ImageViewDialog extends DialogFragment {
      * @return A new instance of fragment ImageView.
      */
     // TODO: Rename and change types and number of parameters
-    public static ImageViewDialog newInstance(@NonNull String param1) {
+    public static ImageViewDialog newInstance(@NonNull byte[] param1) {
         ImageViewDialog fragment = new ImageViewDialog();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
+        args.putByteArray(ARG_PARAM1, param1);
         fragment.setArguments(args);
         return fragment;
     }
@@ -58,11 +62,16 @@ public class ImageViewDialog extends DialogFragment {
         // Required empty public constructor
     }
 
+    @Inject
+    public void setBackupService(BackupService backupService) {
+        this.backupService = backupService;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
+            mParam1 = getArguments().getByteArray(ARG_PARAM1);
         }
     }
 
@@ -76,29 +85,21 @@ public class ImageViewDialog extends DialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        assert StringUtils.isNotBlank(mParam1) : "Image view dialog was created without arguments!!!!";
+        assert mParam1 != null && mParam1.length > 0 : "Image view dialog was created without arguments!!!!";
         ThreadManager.execute(() -> {
             BufferedInputStream inputStream = null;
-            try {
-                inputStream = new BufferedInputStream(BackupService.retrieveFile(mParam1,
-                        ImageUtilities.convertDpToPx(Constants.MediaViewerControls.MAX_WIDTH_DP * 2, getResources()),
-                        ImageUtilities.convertDpToPx(Constants.MediaViewerControls.MAX_HIEGHT_DP * 2, getResources()),
-                        getContext()).get());
-                Bitmap bmp = ImageUtilities.createBitMap(inputStream);
-                if (getContext() != null) {
-                    requireContext().getMainExecutor().execute(() -> {
-                        ImageView imageView = view.findViewById(R.id.imageViewDialogFocus);
-                        imageView.setImageBitmap(bmp);
-                        imageView.setVisibility(View.VISIBLE);
-                    });
-                } else {
-                    dismiss();
-                }
-            } catch (ExecutionException | InterruptedException e) {
-                e.printStackTrace();
-                ACRA.getErrorReporter().handleSilentException(e);
-            }
 
+            inputStream = new BufferedInputStream(new ByteArrayInputStream(mParam1));
+            Bitmap bmp = ImageUtilities.createBitMap(inputStream);
+            if (getContext() != null) {
+                requireContext().getMainExecutor().execute(() -> {
+                    ImageView imageView = view.findViewById(R.id.imageViewDialogFocus);
+                    imageView.setImageBitmap(bmp);
+                    imageView.setVisibility(View.VISIBLE);
+                });
+            } else {
+                dismiss(); //TODO add additional error handling
+            }
         });
     }
 }

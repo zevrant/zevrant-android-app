@@ -3,12 +3,12 @@ package com.zevrant.services.zevrantandroidapp.adapters;
 import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.database.DataSetObserver;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 
@@ -17,13 +17,21 @@ import androidx.fragment.app.FragmentManager;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.fragments.dialogs.ImageViewDialog;
 import com.zevrant.services.zevrantandroidapp.pojo.BackupFilePair;
+import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 import com.zevrant.services.zevrantandroidapp.utilities.ImageUtilities;
 import com.zevrant.services.zevrantandroidapp.utilities.ThreadManager;
-import com.zevrant.services.zevrantuniversalcommon.rest.backup.response.BackupFile;
 
+import org.acra.ACRA;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class ImageListAdapter implements ListAdapter {
 
@@ -32,13 +40,18 @@ public class ImageListAdapter implements ListAdapter {
     private final List<DataSetObserver> observers;
     private final ViewGroup viewGroup;
     private final FragmentManager fragmentManager;
+    private final BackupService backupService;
+    private final Resources resources;
 
-    public ImageListAdapter(List<BackupFilePair> items, Context context, ViewGroup viewGroup, FragmentManager fragmentManager) {
+    public ImageListAdapter(List<BackupFilePair> items, Context context, ViewGroup viewGroup, FragmentManager fragmentManager,
+                            BackupService backupService, Resources resources) {
         this.items = items;
         this.context = context;
         this.observers = new ArrayList<>();
         this.viewGroup = viewGroup;
-        this.fragmentManager = fragmentManager;
+       this.fragmentManager = fragmentManager;
+       this.backupService = backupService;
+       this.resources = resources;
     }
 
     @Override
@@ -91,7 +104,7 @@ public class ImageListAdapter implements ListAdapter {
             Log.d(LOG_TAG, "this isn't right...");
         }
         if (convertView == null) {
-            inflatedView = layoutInflater.inflate(R.layout.image_row, viewGroup);
+            inflatedView = layoutInflater.inflate(R.layout.image_row, null);
         } else {
             inflatedView = convertView;
         }
@@ -99,8 +112,10 @@ public class ImageListAdapter implements ListAdapter {
         imageView.setMaxWidth(Constants.MediaViewerControls.MAX_WIDTH_DP);
         imageView.setMaxHeight(Constants.MediaViewerControls.MAX_HIEGHT_DP);
         imageView.setOnClickListener(listener -> {
-            ImageViewDialog dialog = ImageViewDialog.newInstance(item.getLeft().getFileHash());
-            dialog.show(fragmentManager, item.getLeft().getFileName());
+            ThreadManager.execute( () -> {
+                ImageViewDialog dialog = ImageViewDialog.newInstance(loadImage(item.getLeft().getFileHash()));
+                dialog.show(fragmentManager, item.getLeft().getFileName());
+            });
         });
         Log.d(LOG_TAG, item.getLeft().getFileName());
         imageView.setImageBitmap(ImageUtilities.createBitMap(item.getLeft().getImageIcon()));
@@ -110,14 +125,40 @@ public class ImageListAdapter implements ListAdapter {
             imageViewRight.setMaxWidth(Constants.MediaViewerControls.MAX_WIDTH_DP);
             imageViewRight.setMaxHeight(Constants.MediaViewerControls.MAX_HIEGHT_DP);
             imageViewRight.setOnClickListener(listener -> {
-                ImageViewDialog dialog = ImageViewDialog.newInstance(item.getRight().getFileHash());
-                dialog.show(fragmentManager, item.getRight().getFileName());
+                ThreadManager.execute( () -> {
+                    ImageViewDialog dialog = ImageViewDialog.newInstance(loadImage(item.getRight().getFileHash()));
+                    dialog.show(fragmentManager, item.getRight().getFileName());
+                });
             });
             Log.d(LOG_TAG, item.getRight().getFileName());
             imageViewRight.setImageBitmap(ImageUtilities.createBitMap(item.getRight().getImageIcon()));
             imageViewRight.setVisibility(View.VISIBLE);
         }
         return inflatedView;
+    }
+
+    private byte[] loadImage(String fileHash) {
+        try {
+            InputStream imageInputStream = backupService.retrieveFile(fileHash,
+                    ImageUtilities.convertDpToPx(Constants.MediaViewerControls.MAX_WIDTH_DP * 2, resources),
+                    ImageUtilities.convertDpToPx(Constants.MediaViewerControls.MAX_HIEGHT_DP * 2, resources)
+            ).get();
+            if (imageInputStream != null) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                byte[] bytes = new byte[2048];
+                BufferedInputStream readStream = new BufferedInputStream(imageInputStream);
+                int read = readStream.read(bytes);
+                while (read >= 0) {
+                    buffer.write(bytes, 0, read);
+                    read = readStream.read(bytes);
+                }
+                return buffer.toByteArray();
+            }
+        } catch (ExecutionException | InterruptedException | IOException e) {
+            e.printStackTrace();
+            ACRA.getErrorReporter().handleSilentException(e);
+        }
+        return null; //TODO add error screen
     }
 
     @Override

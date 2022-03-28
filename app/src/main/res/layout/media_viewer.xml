@@ -5,7 +5,7 @@
     android:layout_height="200dp"
     android:layout_gravity="center"
     android:layout_marginBottom="100dp"
-    tools:context=".fragments.ErrorFragment">
+    android:background="@color/grey_angular_variant">
 
     <TextView
         android:id="@+id/error_fragment_text"

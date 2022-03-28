@@ -4,7 +4,6 @@ import static com.zevrant.services.zevrantandroidapp.utilities.Constants.LOG_TAG
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,55 +16,73 @@ import android.view.autofill.AutofillManager;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.work.Constraints;
 import androidx.work.Data;
 
 import com.google.android.material.bottomnavigation.BottomNavigationItemView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.zevrant.services.zevrantandroidapp.BuildConfig;
 import com.zevrant.services.zevrantandroidapp.R;
-import com.zevrant.services.zevrantandroidapp.ZevrantAndroidApp;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.fragments.LoginFragment;
 import com.zevrant.services.zevrantandroidapp.fragments.MediaViewer;
 import com.zevrant.services.zevrantandroidapp.pojo.AuthBody;
-import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
-import com.zevrant.services.zevrantandroidapp.services.EncryptionServiceImpl;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
-import com.zevrant.services.zevrantandroidapp.services.RequestQueueService;
-import com.zevrant.services.zevrantandroidapp.services.UserSettingsService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 import com.zevrant.services.zevrantandroidapp.utilities.ThreadManager;
 
 import org.acra.ACRA;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class ZevrantServices extends AppCompatActivity {
 
     private BottomNavigationItemView loginButton;
     private BottomNavigationView mainNavView;
     private static FragmentManager fragmentManager;
     private FragmentContainerView mainView;
+    private EncryptionService encryptionService;
+    private CredentialsService credentialsService;
+    private OAuthService oauthService;
+    private JsonParser jsonParser;
+    private static int currentFragment = R.id.mainView;
 
+
+    public static void setCurrentFragment(int fragmentId) {
+        currentFragment = fragmentId;
+    }
+
+    public static int getCurrentFragment() {
+        return currentFragment;
+    }
+
+    //    private static final
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fragmentManager = getSupportFragmentManager();
-
-        initServices(this);
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        fragmentManager.getFragments().forEach(transaction::remove);
+        transaction.commit();
         this.getSystemService(AutofillManager.class)
                 .disableAutofillServices();
         setContentView(R.layout.activity_main);
@@ -79,32 +96,68 @@ public class ZevrantServices extends AppCompatActivity {
                 Log.e(LOG_TAG, "failed to wait for redirect to be processed");
                 ACRA.getErrorReporter().handleSilentException(e);
             }
-            if (!CredentialsService.hasAuthorization()
-                    && !EncryptionService.hasSecret(Constants.SecretNames.REFRESH_TOKEN_1)
-                    && (getIntent() == null || getIntent().getData() == null)) {
+            if (!credentialsService.hasAuthorization()
+                    && !encryptionService.hasSecret(Constants.SecretNames.REFRESH_TOKEN_1)) {
                 getMainExecutor().execute(() -> ZevrantServices.switchToLogin(this));
             } else {
-                try {
-                    CredentialsService.getAuthorization(this);
-                    loadRoles();
-                    startServices();
-                    initMediaView();
-                } catch (CredentialsNotFoundException ex) {
-                    CredentialsService.clearAuth();
-                    getMainExecutor().execute(() -> ZevrantServices.switchToLogin(this));
-                }
+                credentialsService.getAuthorization();
+                loadRoles();
+                startServices();
+                initMediaView();
+            }
+        });
+        fragmentManager.addFragmentOnAttachListener((manager, fragment) -> {
+            if(fragment.getId() == R.id.loginForm) {
+                findViewById(R.id.accountButton).setVisibility(View.INVISIBLE);
+                findViewById(R.id.mainNavView).setVisibility(View.INVISIBLE);
             }
         });
     }
 
-    public static void switchToLogin(Context context) {
-        LoginFragment loginView = new LoginFragment();
-        fragmentManager.beginTransaction()
-                .replace(R.id.mainView, loginView)
-                .commit();
-        ((Activity) context).findViewById(R.id.accountButton).setVisibility(View.INVISIBLE);
-        ((Activity) context).findViewById(R.id.mainNavView).setVisibility(View.INVISIBLE);
+    @Inject
+    public void setEncryptionService(EncryptionService encryptionService) {
+        this.encryptionService = encryptionService;
     }
+
+    @Inject
+    public void setCredentialsService(CredentialsService credentialsService) {
+        this.credentialsService = credentialsService;
+    }
+
+    @Inject
+    public void setOauthService(OAuthService oauthService) {
+        this.oauthService = oauthService;
+    }
+
+    @Inject
+    public void setJsonParser(JsonParser jsonParser) {
+        this.jsonParser = jsonParser;
+    }
+
+    public static Future<String> switchToLogin(Context context) {
+        Log.d(LOG_TAG, "Switching to login");
+        if(currentFragment == R.id.loginForm || currentFragment == 0) {
+            Log.d(LOG_TAG, "not switching to login, login fragment already active");
+            return new CompletableFuture<>();
+        }
+        int fragment = currentFragment;
+        currentFragment = R.id.loginForm;
+
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        fragmentManager.getFragments().forEach(transaction::remove);
+        transaction.add(R.id.mainView, new LoginFragment())
+                .commit();
+        return new CompletableFuture<>();
+    }
+
+    public static void navigate(Fragment previousFragment, Fragment fragment) {
+        currentFragment = fragment.getId();
+        fragmentManager.beginTransaction()
+                .remove(previousFragment)
+                .add(R.id.mainView, fragment)
+        .commit();
+    }
+
 
     private void initMediaView() {
         getSupportFragmentManager().beginTransaction()
@@ -113,11 +166,18 @@ public class ZevrantServices extends AppCompatActivity {
     }
 
     private void loadRoles() {
-        ThreadManager.execute(() -> OAuthService.loadRoles(this));
+        ThreadManager.execute(() -> {
+            oauthService.loadRoles(this, credentialsService.getAuthorization(), credentialsService);
+
+        });
     }
 
     public Future<Boolean> handleRedirect(Intent intent) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if(credentialsService.hasAuthorization()) {
+            future.complete(true);
+            return future;
+        }
         new Thread(() -> {
 
             if (intent != null && intent.getData() != null) {
@@ -126,18 +186,17 @@ public class ZevrantServices extends AppCompatActivity {
                 String authBody = new String(
                         Base64.getDecoder().decode(
                                 intent.getData().getQueryParameter("body")), StandardCharsets.UTF_8);
-                AuthBody auth = JsonParser.readValueFromString(authBody, AuthBody.class);
-                try {
-                    assert auth != null;
+                AuthBody auth = jsonParser.readValueFromString(authBody, AuthBody.class);
+//                try {
+//                    assert auth != null;
 
-                    CredentialsService.manageOAuthToken(OAuthService.exchangeCode(auth.getCode()), true);
-                    CredentialsService.getAuthorization(this);
-                    OAuthService.loadRoles(this);
-                } catch (ExecutionException | InterruptedException | CredentialsNotFoundException e) {
-                    e.printStackTrace();
-                    Log.i("failed to exchange authorization code for a token", LOG_TAG);
-                    ACRA.getErrorReporter().handleSilentException(e);
-                }
+//                    credentialsService.manageOAuthToken(oauthService.exchangeCode(auth.getCode(), credentialsService), true);
+                    oauthService.loadRoles(this, credentialsService.getAuthorization(), credentialsService);
+//                } catch (ExecutionException | InterruptedException | CredentialsNotFoundException e) {
+//                    e.printStackTrace();
+//                    Log.i("failed to exchange authorization code for a token", LOG_TAG);
+//                    ACRA.getErrorReporter().handleSilentException(e);
+//                }
             }
             future.complete(true);
         }).start();
@@ -159,20 +218,6 @@ public class ZevrantServices extends AppCompatActivity {
         mainNavView = findViewById(R.id.mainNavView);
         loginButton = findViewById(R.id.accountButton);
         mainView = findViewById(R.id.mainView);
-    }
-
-    public void initServices(Context context) {
-        try {
-            EncryptionService.init(new EncryptionServiceImpl(context));
-            RequestQueueService.init(getFilesDir());
-            OAuthService.init(context);
-            BackupService.init(context);
-            UserSettingsService.init(context);
-        } catch (IOException ex) {
-            Log.e(LOG_TAG, ex.getMessage() + ExceptionUtils.getStackTrace(ex));
-            ACRA.getErrorReporter().handleSilentException(ex);
-
-        }
     }
 
     private void startServices() {

@@ -1,24 +1,34 @@
 package com.zevrant.services.zevrantandroidapp.fragments;
 
-import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebView;
-
 import com.zevrant.services.zevrantandroidapp.R;
+import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
+import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
+import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
+import com.zevrant.services.zevrantandroidapp.utilities.ThreadManager;
+
+import java.util.Objects;
+
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
 
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link LoginFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
+@AndroidEntryPoint
 public class LoginFragment extends Fragment {
 
     // TODO: Rename parameter arguments, choose names that match
@@ -26,7 +36,15 @@ public class LoginFragment extends Fragment {
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    private WebView loginWebView;
+    private CredentialsService credentialsService;
+
+    private EditText usernameView;
+    private EditText passwordView;
+
+    @Inject
+    public void setOAuthService(CredentialsService credentialsService) {
+        this.credentialsService = credentialsService;
+    }
 
     public LoginFragment() {
         // Required empty public constructor
@@ -48,8 +66,6 @@ public class LoginFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
     }
 
     @Override
@@ -61,20 +77,25 @@ public class LoginFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // Inflate the layout for this fragment
-        loginWebView = view.findViewById(R.id.login_web_view);
-//        loginWebView = getActivity().findViewById(R.id.login_web_view);
-        assert loginWebView != null: "Failed to retrieve webView";
-        loginWebView.getSettings().setJavaScriptEnabled(true);
-        loginWebView.getSettings().setDomStorageEnabled(true);
-        loginWebView.loadUrl(new Uri.Builder()
-                .scheme("https")
-                .encodedAuthority(getString(R.string.encoded_authority))
-                .path("/auth/realms/zevrant-services/protocol/openid-connect/auth")
-                .appendQueryParameter("client_id", "android")
-                .appendQueryParameter("scope", "openid")
-                .appendQueryParameter("response_type", "code")
-                .appendQueryParameter("redirect_uri", getString(R.string.redirect_uri))
-                .build().toString());
+        usernameView = (EditText) view.findViewById(R.id.username);
+        passwordView = (EditText) view.findViewById(R.id.password);
+        Button loginButton = (Button) view.findViewById(R.id.loginButton);
+        loginButton.setOnClickListener((clickedView) -> {
+            ThreadManager.execute(() -> {
+                try {
+                    credentialsService.freshLogin(usernameView.getText().toString(), passwordView.getText().toString());
+                } catch (CredentialsNotFoundException e) {
+                    //TODO add proper error handling
+                    e.printStackTrace();
+                }
+                requireContext().getMainExecutor().execute(() -> {
+                    loginButton.setVisibility(View.INVISIBLE);
+                    ZevrantServices.setCurrentFragment(getId());
+                    ZevrantServices.navigate(this, new MediaViewer());
+                });
+            });
+        });
+
+
     }
 }

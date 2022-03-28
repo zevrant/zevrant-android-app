@@ -3,31 +3,35 @@ package com.zevrant.services.zevrantandroidapp.volley.requests;
 import androidx.annotation.Nullable;
 
 import com.android.volley.DefaultRetryPolicy;
-import com.android.volley.Request;
 import com.android.volley.Response;
-import com.android.volley.RetryPolicy;
+import com.zevrant.services.zevrantandroidapp.pojo.ErrorListener;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-public class StringRequest extends com.android.volley.toolbox.StringRequest {
+public class StringRequest extends com.android.volley.toolbox.StringRequest implements OAuthRequest {
 
     private final Map<String, String> headers;
     private final Map<String, String> params;
     private String body;
 
-    public StringRequest(int method, String url, Response.Listener<String> listener, @Nullable Response.ErrorListener errorListener) {
+    public StringRequest(int method, String url, Response.Listener<String> listener, ErrorListener<StringRequest> errorListener) {
         super(method, url, listener, errorListener);
         this.headers = new HashMap<>();
         this.params = new HashMap<>();
         this.setContentType("application/json");
         this.setTimeout(10000);
+        if(errorListener == null) {
+            throw new RuntimeException("Filed to create request, ErrorListener  was null");
+        }
+        errorListener.setRequest(this);
     }
 
-    public StringRequest(int method, String url, String body, Response.Listener<String> listener, @Nullable Response.ErrorListener errorListener) {
+    public StringRequest(int method, String url, String body, Response.Listener<String> listener, ErrorListener<StringRequest> errorListener) {
         this(method, url, listener, errorListener);
         this.body = body;
     }

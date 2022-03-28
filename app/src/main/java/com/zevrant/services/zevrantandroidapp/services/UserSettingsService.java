@@ -7,28 +7,31 @@ import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.regex.Pattern;
+import javax.inject.Inject;
+
+import dagger.hilt.android.qualifiers.ApplicationContext;
 
 public class UserSettingsService {
 
-    private static SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferences;
 
-    public static void init(Context context) {
+    @Inject
+    public UserSettingsService(@ApplicationContext Context context) {
         sharedPreferences = context.getSharedPreferences("zevrant-services-preferences-user-settings", Context.MODE_PRIVATE);
         //TODO pull from remote stored preferences
         for(Constants.UserPreference userPreference : Constants.UserPreference.values()) {
             String preference = getPreference(userPreference);
             if(StringUtils.isBlank(preference) || !userPreference.getMatcher(preference).matches()) {
-                UserSettingsService.setPreference(userPreference, userPreference.getValue());
+                setPreference(userPreference, userPreference.getValue());
             }
         }
     }
 
-    public static String getPreference(Constants.UserPreference preference) {
+    public String getPreference(Constants.UserPreference preference) {
         return sharedPreferences.getString(preference.name(), null);
     }
 
-    public static boolean setPreference(Constants.UserPreference preference, String value) {
+    public boolean setPreference(Constants.UserPreference preference, String value) {
         return sharedPreferences.edit()
                 .putString(preference.name(), value)
                 .commit();

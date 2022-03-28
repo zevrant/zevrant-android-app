@@ -14,11 +14,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 
+import javax.inject.Inject;
+
 public class HashingService {
 
-    private static final ChecksumService checksumService = new ChecksumService(new HexConversionService());
+    private final ChecksumService checksumService;
 
-    public static String getSha512Checksum(InputStream is) {
+    @Inject
+    public HashingService() {
+        this.checksumService = new ChecksumService(new HexConversionService());
+    }
+
+    public String getSha512Checksum(InputStream is) {
         try {
             return checksumService.getSha512Checksum(is);
         } catch( IOException ex) {

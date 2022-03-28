@@ -13,15 +13,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.acra.ACRA;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import javax.inject.Inject;
+
 public class JsonParser {
 
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    static {
+    @Inject
+    public JsonParser() {
         objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
     }
 
-    public synchronized static <T> T readValueFromString(String jsonString, Class<T> clazz) {
+    public <T> T readValueFromString(String jsonString, Class<T> clazz) {
         try {
             return objectMapper.readValue(jsonString, clazz);
         } catch (JsonProcessingException ex) {
@@ -31,7 +34,7 @@ public class JsonParser {
         return null;
     }
 
-    public synchronized static <T> T readValueFromString(String jsonString, TypeReference<T> typeReference) {
+    public <T> T readValueFromString(String jsonString, TypeReference<T> typeReference) {
         try {
             return objectMapper.readValue(jsonString, typeReference);
         } catch (JsonProcessingException ex) {
@@ -41,7 +44,7 @@ public class JsonParser {
         return null;
     }
 
-    public static String writeValueAsString(Object object) {
+    public String writeValueAsString(Object object) {
         try {
             return objectMapper.writeValueAsString(object);
         } catch (JsonProcessingException ex) {

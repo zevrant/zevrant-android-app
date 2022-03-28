@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="backup_base_url">https://develop.zevrant-services.com/zevrant-backup-service</string>
-    <string name="keycloak_url">https://develop.zevrant-services.com/auth/realms/zevrant-services/protocol/openid-connect/token</string>
+    <string name="keycloak_url">https://develop.zevrant-services.com/auth/realms/zevrant-services-develop/protocol/openid-connect/token</string>
+    <string name="keycloak_realm">zevrant-services-develop</string>
     <string name="oauth_base_url">https://develop.zevrant-services.com/zevrant-oauth2-service</string>
     <string name="redirect_uri">https://android.develop.zevrant-services.com</string>
     <string name="reportsUrl">https://develop.zevrant-services.com/zevrant-acra-backend/reports</string>
@@ -9,4 +10,5 @@
     <string name="artifactFolder">develop</string>
     <string name="testUpdate">true</string>
     <string name="manualServiceTesting">false</string>
+    <string name="encoded_authority">develop.zevrant-services.com</string>
 </resources>

@@ -12,15 +12,14 @@ import org.acra.config.HttpSenderConfigurationBuilder;
 import org.acra.data.StringFormat;
 import org.acra.sender.HttpSender;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import dagger.hilt.android.HiltAndroidApp;
 
+@HiltAndroidApp
 @AcraCore(buildConfigClass = BuildConfig.class)
 public class ZevrantAndroidApp extends Application {
+
     public static final String CHANNEL_ID = "test";
     public static final String CHANNEL_ID_1 = "test1";
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(4);
-
     public ZevrantAndroidApp() {
     }
 
@@ -28,12 +27,13 @@ public class ZevrantAndroidApp extends Application {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         CoreConfigurationBuilder builder = new CoreConfigurationBuilder(this);
+        boolean acraEnabled = BuildConfig.VERSION_CODE != 3;
         builder
                 .setReportFormat(StringFormat.JSON)
                 .getPluginConfigurationBuilder(HttpSenderConfigurationBuilder.class)
                 .setHttpMethod(HttpSender.Method.POST)
                 .setUri(base.getString(R.string.reportsUrl))
-                .setEnabled(true);
+                .setEnabled(acraEnabled);
         // The following line triggers the initialization of ACRA
         ACRA.init(this, builder);
     }
@@ -52,6 +52,5 @@ public class ZevrantAndroidApp extends Application {
         NotificationChannel notificationChannel = new NotificationChannel(CHANNEL_ID_1, "test1", NotificationManager.IMPORTANCE_HIGH);
         manager.createNotificationChannel(notificationChannel);
     }
-
 
 }
