@@ -35,7 +35,7 @@ android {
     if (project.hasProperty('testVariant')) {
         testBuildType project.testVariant
     } else {
-        testBuildType 'developTest'
+        testBuildType 'localTest'
     }
     int versionCodeString = Integer.parseInt(project.hasProperty("versionCode") ? project.versionCode : '3')
     defaultConfig {
