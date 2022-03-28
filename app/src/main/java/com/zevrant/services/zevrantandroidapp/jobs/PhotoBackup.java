@@ -186,7 +186,8 @@ public class PhotoBackup extends ListenableWorker {
     }
 
     private void sendBackUp(FileInfo fileInfo, Uri uri) throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        BackupFileRequest backupFileRequest = new BackupFileRequest(fileInfo);
+        BackupFileRequest backupFileRequest = new BackupFileRequest();
+        backupFileRequest.setFileInfo(fileInfo);
         Log.i(LOG_TAG, backupFileRequest.toString());
         Log.i(LOG_TAG, "backing up file ".concat(fileInfo.getFileName()));
         InputStream is = this.context

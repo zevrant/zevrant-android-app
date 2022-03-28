@@ -118,7 +118,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     def nav_version = "2.3.5"
-    implementation 'com.zevrant.services:zevrant-universal-common:test-6'
+    implementation 'com.zevrant.services:zevrant-universal-common:8'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'androidx.appcompat:appcompat:1.4.0'
     implementation 'com.google.android.material:material:1.4.0'
