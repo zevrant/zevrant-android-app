@@ -97,7 +97,7 @@ public class OAuthService {
 //        return token;
 //    }
 
-    public OAuthToken refreshToken(OAuthToken oAuthToken, CredentialsService credentialsService) throws ExecutionException, InterruptedException, CredentialsNotFoundException {
+    public OAuthToken refreshToken(OAuthToken oAuthToken) throws ExecutionException, InterruptedException, CredentialsNotFoundException {
         OAuthToken token = null;
         URL url = null;
         try {

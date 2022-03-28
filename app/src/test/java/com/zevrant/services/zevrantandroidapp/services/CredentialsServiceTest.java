@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -11,9 +12,11 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import android.content.Context;
 
+import com.zevrant.services.zevrantandroidapp.exceptions.CredentialTimeoutException;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 import com.zevrant.services.zevrantuniversalcommon.rest.oauth.response.OAuthToken;
@@ -21,7 +24,10 @@ import com.zevrant.services.zevrantuniversalcommon.rest.oauth.response.OAuthToke
 import junit.framework.TestCase;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.internal.runners.statements.ExpectException;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.Mock;
@@ -29,6 +35,7 @@ import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 
 @RunWith(JUnit4.class)
 public class CredentialsServiceTest extends TestCase {
@@ -43,7 +50,6 @@ public class CredentialsServiceTest extends TestCase {
     @Mock
     private OAuthService oAuthService;
 
-
     @Before
     public void setup() {
         context = Mockito.mock(Context.class);
@@ -53,7 +59,7 @@ public class CredentialsServiceTest extends TestCase {
     }
 
     @Test
-    public void manageOauthTokenWriteToken() {
+    public void manageOauthTokenWriteToken() throws Exception {
         doNothing().when(encryptionService).setSecret(anyString(), anyString());
         OAuthToken oAuthToken = new OAuthToken();
         oAuthToken.setAccessToken("sdlkfjghsdlkfjghsdlkfgjh.lksdjfhghsldkjfghsdflkghsdfj.sldkfjghsdlfkjghsdefrlkgjh");
@@ -67,14 +73,14 @@ public class CredentialsServiceTest extends TestCase {
     }
 
     @Test(expected = RuntimeException.class)
-    public void manageOauthTokenWriteNullToken() {
+    public void manageOauthTokenWriteNullToken() throws Exception {
         doNothing().when(encryptionService).setSecret(anyString(), anyString());
         credentialsService.manageOAuthToken(null, true);
         fail("Should throw RuntimeException");
     }
 
     @Test
-    public void manageOauthTokenWriteTokenUpdateToken() {
+    public void manageOauthTokenWriteTokenUpdateToken() throws Exception {
         doNothing().when(encryptionService).setSecret(anyString(), anyString());
         OAuthToken oAuthToken = new OAuthToken();
         oAuthToken.setAccessToken("sdlkfjghsdlkfjghsdlkfgjh.lksdjfhghsldkjfghsdflkghsdfj.sldkfjghsdlfkjghsdefrlkgjh");
@@ -99,7 +105,7 @@ public class CredentialsServiceTest extends TestCase {
     }
 
     @Test
-    public void getAuthorizationValidUnexpiredToken() throws CredentialsNotFoundException, ExecutionException, InterruptedException {
+    public void getAuthorizationValidUnexpiredToken() throws Exception {
         OAuthToken defaultToken = setDefaultToken();
         String authorization = credentialsService.getAuthorization();
         verify(encryptionService, never()).getSecret(anyString());
@@ -110,10 +116,10 @@ public class CredentialsServiceTest extends TestCase {
     }
 
     @Test
-    public void getAuthorizationValidExpiredToken() throws CredentialsNotFoundException, ExecutionException, InterruptedException {
+    public void getAuthorizationValidExpiredToken() throws Exception {
         OAuthToken defaultToken = setDefaultToken();
-        defaultToken.setExpiresInDateTime(defaultToken.getExpirationDateTime().minusMinutes(14));
-        defaultToken.setRefreshExpiresInDateTime(defaultToken.getRefreshExpiresInDateTime().minusMinutes(14));
+        defaultToken.setExpiresInDateTime(defaultToken.getExpirationDateTime().minusMinutes(20));
+        defaultToken.setRefreshExpiresInDateTime(defaultToken.getRefreshExpiresInDateTime().minusMinutes(20));
         defaultToken = credentialsService.manageOAuthToken(defaultToken, true);
         OAuthToken newToken = new OAuthToken();
         newToken.setAccessToken("dfghdfghfghfgh.209347t8gydfsvkjdlgn45.xzvcp';ovziuxv");
@@ -130,19 +136,22 @@ public class CredentialsServiceTest extends TestCase {
         assertThat(authorization, is(newToken.getAccessToken()));
     }
 
-    @Test(expected = RuntimeException.class)
-    public void getAuthorizationValidExpiredTokenNullTokenReturned() throws CredentialsNotFoundException, ExecutionException, InterruptedException {
+    @Test(expected = CredentialTimeoutException.class)
+    public void getAuthorizationValidExpiredTokenNullTokenReturned() throws Exception {
+        Executor mockExecutor = Mockito.mock(Executor.class);
+        given(context.getMainExecutor()).willReturn(mockExecutor);
+        doNothing().when(mockExecutor).execute(any(Runnable.class));
         OAuthToken defaultToken = setDefaultToken();
-        defaultToken.setExpiresInDateTime(defaultToken.getExpirationDateTime().minusMinutes(14));
+        defaultToken.setExpiresInDateTime(LocalDateTime.now().minusMinutes(14));
         defaultToken.setRefreshExpiresInDateTime(defaultToken.getRefreshExpiresInDateTime().minusMinutes(14));
         defaultToken = credentialsService.manageOAuthToken(defaultToken, true);
         given(oAuthService.refreshToken(defaultToken)).willReturn(null);
         credentialsService.getAuthorization();
-        fail("Should have thrown CredentialsNotFoundException");
+
     }
 
     @Test
-    public void getAuthorizationNullTokenStoredValid() throws CredentialsNotFoundException, ExecutionException, InterruptedException {
+    public void getAuthorizationNullTokenStoredValid() throws Exception {
         OAuthToken newToken = new OAuthToken();
         newToken.setAccessToken("section0.section1.section2");
         newToken.setExpiresInDateTime(LocalDateTime.now().plusMinutes(15));
@@ -171,7 +180,7 @@ public class CredentialsServiceTest extends TestCase {
     }
 
     @Test
-    public void getAuthorizationNullTokenStoredValidExpired() throws CredentialsNotFoundException, ExecutionException, InterruptedException {
+    public void getAuthorizationNullTokenStoredValidExpired() throws Exception {
         OAuthToken encryptedToken = new OAuthToken();
         encryptedToken.setAccessToken("section0.section1.section2");
         encryptedToken.setExpiresInDateTime(LocalDateTime.now().plusMinutes(15));
@@ -201,7 +210,7 @@ public class CredentialsServiceTest extends TestCase {
 
     }
 
-    private OAuthToken setDefaultToken() {
+    private OAuthToken setDefaultToken() throws Exception {
         OAuthToken oAuthToken = new OAuthToken();
         oAuthToken.setAccessToken("sdlkfjghsdlkfjghsdlkfgjh.lksdjfhghsldkjfghsdflkghsdfj.sldkfjghsdlfkjghsdefrlkgjh");
         oAuthToken.setExpiresInDateTime(LocalDateTime.now().plusMinutes(15));

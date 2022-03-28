@@ -6,6 +6,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
+import com.zevrant.services.zevrantandroidapp.exceptions.CredentialTimeoutException;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
 import com.zevrant.services.zevrantuniversalcommon.rest.oauth.response.OAuthToken;
@@ -68,7 +69,11 @@ public class CredentialsService {
                 if (isTokenExpired() && !getNewOAuthToken(this)) {
                     Log.d(LOG_TAG, "Requesting login, token expired and unable to refresh");
                     context.getMainExecutor().execute( () -> ZevrantServices.switchToLogin(context));
+                    LocalDateTime now = LocalDateTime.now();
                     while (isTokenExpired()) {
+                        if(LocalDateTime.now().isAfter(now.plusMinutes(1))) {
+                            throw new CredentialsNotFoundException("Timed out waiting for credentials");
+                        }
                         try {
                             Thread.sleep(5000);
                             Log.d(LOG_TAG, "Waiting for oauth token to be provided");
@@ -81,6 +86,9 @@ public class CredentialsService {
             }
             return manageOAuthToken(null, false).getAccessToken();
         } catch (CredentialsNotFoundException ex) {
+            if(ex.getMessage().equals("Timed out waiting for credentials")) {
+                throw new CredentialTimeoutException("Timed out waiting for credentials");
+            }
             Log.d(LOG_TAG, "OAuth credentials not found, redirecting to login");
             ex.printStackTrace();
             context.getMainExecutor().execute( () -> ZevrantServices.switchToLogin(context));
@@ -100,7 +108,7 @@ public class CredentialsService {
 
     private boolean getNewOAuthToken(CredentialsService credentialsService) throws CredentialsNotFoundException {
         try {
-            OAuthToken oAuthToken = oAuthService.refreshToken(manageOAuthToken(null, false), this);
+            OAuthToken oAuthToken = oAuthService.refreshToken(manageOAuthToken(null, false));
             if(oAuthToken == null) {
                 return false;
             }
