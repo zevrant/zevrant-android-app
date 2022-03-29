@@ -30,12 +30,14 @@ import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundException;
 import com.zevrant.services.zevrantandroidapp.fragments.LoginFragment;
 import com.zevrant.services.zevrantandroidapp.fragments.MediaViewer;
+import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
 import com.zevrant.services.zevrantandroidapp.pojo.AuthBody;
 import com.zevrant.services.zevrantandroidapp.services.CredentialsService;
 import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
+import com.zevrant.services.zevrantandroidapp.utilities.JobUtilities;
 import com.zevrant.services.zevrantandroidapp.utilities.ThreadManager;
 
 import org.acra.ACRA;
@@ -225,7 +227,7 @@ public class ZevrantServices extends AppCompatActivity {
                 .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
                 .build();
         Data data = new Data.Builder().build();
-//        JobUtilities.schedulePeriodicJob(this, PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
+        JobUtilities.schedulePeriodicJob(this, PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
 
     }
 
