@@ -5,6 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+import androidx.hilt.work.HiltWorkerFactory;
+import androidx.work.Configuration;
+
 import org.acra.ACRA;
 import org.acra.annotation.AcraCore;
 import org.acra.config.CoreConfigurationBuilder;
@@ -12,15 +16,26 @@ import org.acra.config.HttpSenderConfigurationBuilder;
 import org.acra.data.StringFormat;
 import org.acra.sender.HttpSender;
 
+import javax.inject.Inject;
+
 import dagger.hilt.android.HiltAndroidApp;
 
 @HiltAndroidApp
 @AcraCore(buildConfigClass = BuildConfig.class)
-public class ZevrantAndroidApp extends Application {
+public class ZevrantAndroidApp extends Application implements Configuration.Provider {
 
     public static final String CHANNEL_ID = "test";
     public static final String CHANNEL_ID_1 = "test1";
+
+    private HiltWorkerFactory hiltWorkerFactory;
+
+    @Inject
     public ZevrantAndroidApp() {
+    }
+
+    @Inject
+    public void setHiltWorkerFactory(HiltWorkerFactory hiltWorkerFactory) {
+        this.hiltWorkerFactory = hiltWorkerFactory;
     }
 
     @Override
@@ -53,4 +68,12 @@ public class ZevrantAndroidApp extends Application {
         manager.createNotificationChannel(notificationChannel);
     }
 
+    @NonNull
+    @Override
+    public Configuration getWorkManagerConfiguration() {
+        return new Configuration.Builder()
+                .setWorkerFactory(hiltWorkerFactory)
+                .build();
+
+    }
 }

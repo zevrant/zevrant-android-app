@@ -56,7 +56,6 @@ public class TestPhotoBackupService {
                 .build();
         photoBackup.setBackupService(backupService);
         photoBackup.setCredentialsService(credentialsService);
-        photoBackup.setHashingService(hashingService);
         photoBackup.setEncryptionService(encryptionService);
         photoBackup.setJsonParser(jsonParser);
         photoBackup.setoAuthService(oAuthService);

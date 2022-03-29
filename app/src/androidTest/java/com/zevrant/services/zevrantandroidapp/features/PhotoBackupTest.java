@@ -17,7 +17,9 @@ import android.os.Environment;
 import android.provider.MediaStore;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.work.Configuration;
 import androidx.work.ListenableWorker;
+import androidx.work.WorkManager;
 import androidx.work.testing.TestListenableWorkerBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -118,9 +120,9 @@ public class PhotoBackupTest extends BaseTest {
         photoBackupService.verifyPhotoAdded(getTargetContext(), checksumService);
         PhotoBackup photoBackup = TestListenableWorkerBuilder.from(context, PhotoBackup.class)
                 .build();
+
         photoBackup.setBackupService(backupService);
         photoBackup.setCredentialsService(credentialsService);
-        photoBackup.setHashingService(hashingService);
         photoBackup.setEncryptionService(encryptionService);
         photoBackup.setJsonParser(jsonParser);
         photoBackup.setoAuthService(oAuthService);

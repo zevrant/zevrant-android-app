@@ -14,6 +14,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.hilt.work.HiltWorker;
 import androidx.work.Data;
 import androidx.work.ListenableWorker;
 import androidx.work.WorkerParameters;
@@ -35,6 +36,7 @@ import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.CheckExis
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.request.FileInfo;
 
 import org.acra.ACRA;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.apache.commons.lang3.StringUtils;
 
@@ -54,7 +56,11 @@ import java.util.concurrent.TimeoutException;
 
 import javax.inject.Inject;
 
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedInject;
+
 @SuppressLint("RestrictedApi")
+@HiltWorker
 public class PhotoBackup extends ListenableWorker {
 
     private final String[] projection = new String[]{
@@ -67,15 +73,28 @@ public class PhotoBackup extends ListenableWorker {
     private SettableFuture<Result> mFuture = null;
     private BackupService backupService;
     private EncryptionService encryptionService;
-    private HashingService hashingService;
     private OAuthService oAuthService;
     private JsonParser jsonParser;
     private CredentialsService credentialsService;
 
-    public PhotoBackup(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+    public PhotoBackup(@NonNull Context context, @NonNull WorkerParameters workerParams){
+        super(context,workerParams);
+        this.context = context;
+        this.dataBuilder = new Data.Builder();
+    }
+
+    @AssistedInject
+    public PhotoBackup(@NonNull @Assisted Context context, @NonNull @Assisted WorkerParameters workerParams,
+                       BackupService backupService, EncryptionService encryptionService,
+                       OAuthService oAuthService, JsonParser jsonParser, CredentialsService credentialsService) {
         super(context, workerParams);
         this.context = context;
         this.dataBuilder = new Data.Builder();
+        this.backupService = backupService;
+        this.encryptionService = encryptionService;
+        this.oAuthService = oAuthService;
+        this.jsonParser = jsonParser;
+        this.credentialsService = credentialsService;
     }
 
     @Inject
@@ -86,11 +105,6 @@ public class PhotoBackup extends ListenableWorker {
     @Inject
     public void setEncryptionService(EncryptionService encryptionService) {
         this.encryptionService = encryptionService;
-    }
-
-    @Inject
-    public void setHashingService(HashingService hashingService) {
-        this.hashingService = hashingService;
     }
 
     @Inject
@@ -225,7 +239,7 @@ public class PhotoBackup extends ListenableWorker {
         InputStream is = getApplicationContext().getContentResolver()
                 .openAssetFileDescriptor(ContentUris.withAppendedId(uri, id), "r")
                 .createInputStream();
-        String hash = hashingService.getSha512Checksum(is);
+        String hash = DigestUtils.sha512Hex(is);
         if(StringUtils.isBlank(hash)) {
             Log.i(LOG_TAG,"Not adding file info, hash was blank");
         } else {

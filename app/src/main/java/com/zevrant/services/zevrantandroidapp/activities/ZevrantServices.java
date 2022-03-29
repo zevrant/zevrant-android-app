@@ -223,12 +223,17 @@ public class ZevrantServices extends AppCompatActivity {
     }
 
     private void startServices() {
-        Constraints constraints = new Constraints.Builder()
-                .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
-                .build();
-        Data data = new Data.Builder().build();
-        JobUtilities.schedulePeriodicJob(this, PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
-
+        if(BuildConfig.BUILD_TYPE == "release"
+            || BuildConfig.BUILD_TYPE == "develop") {
+            Log.d(LOG_TAG, "Starting periodic job");
+            Constraints constraints = new Constraints.Builder()
+                    .setTriggerContentMaxDelay(1, TimeUnit.SECONDS)
+                    .build();
+            Data data = new Data.Builder().build();
+            JobUtilities.schedulePeriodicJob(this, PhotoBackup.class, constraints, Constants.JobTags.BACKUP_TAG, data);
+        } else {
+            Log.d(LOG_TAG, "Not starting backup job, only starting for release && develop variants. For testing use the integration tests");
+        }
     }
 
     public boolean hasAtLeastOneVisibleChild(ViewGroup parent) {
