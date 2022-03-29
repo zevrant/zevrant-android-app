@@ -3,7 +3,8 @@
     <string name="encoded_authority">zevrant-services.com</string>
     <string name="backup_base_url">https://zevrant-services.com/zevrant-backup-service</string>
     <string name="keycloak_url">https://zevrant-services.com/zevrant-oauth2-service</string>
-    <string name="keycloak_base_url">https://zevrant-services.com/auth/realms/zevrant-services/protocol/openid-connect/token</string>
+    <string name="keycloak_realm">zevrant-services-prod</string>
+    <string name="keycloak_base_url">https://zevrant-services.com/auth/realms/zevrant-services-prod/protocol/openid-connect/token</string>
     <string name="oauth_base_url">https://zevrant-services.com/zevrant-oauth2-service</string>
     <string name="redirect_uri">https://android.zevrant-services.com</string>
     <string name="reportsUrl">https://acrarium.zevrant-services.com/report</string>
