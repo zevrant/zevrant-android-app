@@ -6,20 +6,15 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-import androidx.lifecycle.Lifecycle;
-import androidx.test.espresso.Espresso;
 import androidx.test.espresso.action.ViewActions;
-import androidx.test.espresso.assertion.ViewAssertions;
 import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
@@ -31,10 +26,10 @@ import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.services.TestPhotoBackupService;
 import com.zevrant.services.zevrantandroidapp.test.BaseTest;
+import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 import com.zevrant.services.zevrantuniversalcommon.services.ChecksumService;
 import com.zevrant.services.zevrantuniversalcommon.services.HexConversionService;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,27 +74,60 @@ public class ViewImageTest extends BaseTest {
     public void setup() throws Exception {
         hiltRule.inject();
         super.setup(activityRule);
-        ChecksumService checksumService = new ChecksumService(new HexConversionService());
         photoBackupService = new TestPhotoBackupService();
-        if(!photoBackupService.hasHashes(backupService)) {
-            photoBackupService.addPhoto(getTargetContext(), getTestContext(), false);
-            photoBackupService.verifyPhotoAdded(getTargetContext(), checksumService);
-            photoBackupService.backupFile(getTargetContext(), backupService, hashingService, encryptionService,
-                    credentialsService, jsonParser, oAuthService, fileHash);
-            assertThat("Photo was reported as backed up but no hashes found", photoBackupService.hasHashes(backupService), is(true));
-            activityRule.getScenario().recreate();
-        }
+        photoBackupService.deleteBackups(getTargetContext(), getTestContext(), cleanupService,
+                credentialsService, jsonParser, backupService, fileHash);
+        photoBackupService.addPhoto(getTargetContext(), getTestContext(), false);
+        photoBackupService.verifyPhotoAdded(getTargetContext());
+        photoBackupService.backupFile(getTargetContext(), backupService, encryptionService,
+                credentialsService, jsonParser, oAuthService);
+        assertThat("Photo was reported as backed up but no hashes found", photoBackupService.hasHashes(backupService), is(true));
+        activityRule.getScenario().recreate();
+
     }
 
     @Test
-    public void DisplayImagesTest() throws Exception {
+    public void displayImagesTest() throws Exception {
+
         Thread.sleep(4000);
         onData(is(not(nullValue())))
                 .inAdapterView(withId(R.id.imageList))
                 .atPosition(0)
                 .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+
+//        onView(withId(-2 - 1))
+//                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)))
+//                .perform(click());
 //        onView(withId(R.id.imageItemLeft))
 //                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
 
+    }
+
+    @Test
+    public void displayImagesLoadAdditional() throws Exception {
+        photoBackupService.deleteMediaStore(getTargetContext());
+        cleanupService.eraseBackups(credentialsService.getAuthorization(), getTargetContext().getString(R.string.backup_base_url), getTargetContext()).get();
+        TestConstants.additionalTestImages.forEach(image -> {
+            try {
+                photoBackupService.addPhoto(getTargetContext(), getTestContext(), false, image);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertThat("Backups should be empty!", photoBackupService.hasHashes(backupService), is(false));
+        photoBackupService.backupFile(getTargetContext(), backupService, encryptionService,
+                credentialsService, jsonParser, oAuthService);
+        activityRule.getScenario().recreate();
+        Thread.sleep(16000);
+        onData(is(not(nullValue())))
+                .inAdapterView(withId(R.id.imageList))
+                .atPosition(5)
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)))
+                .perform(ViewActions.swipeUp());
+        Thread.sleep(4000);
+        onData(is(not(nullValue())))
+                .inAdapterView(withId(R.id.imageList))
+                .atPosition(6)
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
     }
 }

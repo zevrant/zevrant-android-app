@@ -3,14 +3,11 @@ package com.zevrant.services.zevrantandroidapp.services;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.IsNot.not;
 
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Environment;
@@ -23,9 +20,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
-import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
-import com.zevrant.services.zevrantuniversalcommon.services.ChecksumService;
-import com.zevrant.services.zevrantuniversalcommon.services.HexConversionService;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,12 +29,6 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -49,9 +37,9 @@ public class TestPhotoBackupService {
 
     private static final String testFileHash = "2ceb517f7442b31dd1bf08fbcf93a64b5b0533bf0ab5a103670d1c5ed1de0882461d603581cba548b7f7541f427ba0fdc6e0c57058695cf92385fd5422910790";
 
-    public void backupFile(Context targetContext, BackupService backupService, HashingService hashingService,
+    public void backupFile(Context targetContext, BackupService backupService,
                            EncryptionService encryptionService, CredentialsService credentialsService,
-                           JsonParser jsonParser, OAuthService oAuthService, String fileHash) throws Exception {
+                           JsonParser jsonParser, OAuthService oAuthService) throws Exception {
         PhotoBackup photoBackup = TestListenableWorkerBuilder.from(targetContext, PhotoBackup.class)
                 .build();
         photoBackup.setBackupService(backupService);
@@ -62,15 +50,6 @@ public class TestPhotoBackupService {
         ListenableWorker.Result result = photoBackup.startWork().get();
 
         assertThat("WorkerTask did not succeed", result.toString(), is("Success {mOutputData=Data {}}"));
-        Future<String> future =
-                backupService.getAlllHashes();
-        String responseString = future.get(TestConstants.DEFAULT_TIMEOUT_INTERVAL, TestConstants.DEFAULT_TIMEOUT_UNIT);
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<String> hashes = objectMapper.readValue(responseString, new TypeReference<>() {
-        });
-
-        assertThat("File hash was not found on server", hashes.size(), is(greaterThan(0)));
-        assertThat("File hash ".concat(fileHash).concat(" was not found"), hashes.contains(fileHash), is(true));
     }
 
     public boolean hasHashes(BackupService backupService) throws Exception {
@@ -84,7 +63,7 @@ public class TestPhotoBackupService {
 
     public void deleteBackups(Context targetContext, Context testContext, CleanupService cleanupService,
                               CredentialsService credentialsService, JsonParser jsonParser, BackupService backupService,
-                              String fileHash) throws Exception{
+                              String fileHash) throws Exception {
         Future<String> future = cleanupService.eraseBackups(credentialsService.getAuthorization(), targetContext.getString(R.string.backup_base_url), testContext);
         String deleteResponse = future.get(5, TimeUnit.MINUTES);
         assertThat("Call to delete test hash returned empty", StringUtils.isNotBlank(deleteResponse), is(true));
@@ -98,7 +77,8 @@ public class TestPhotoBackupService {
         assertThat("File hashes were not cleared after test run", hashes.size(), is(0));
     }
 
-    public void verifyPhotoAdded(Context targetContext, ChecksumService checksumService) throws IOException, NoSuchAlgorithmException {
+    public int verifyPhotoAdded(Context targetContext) throws IOException {
+        int itemsFound = 0;
         final String[] projection = new String[]{
                 MediaStore.Images.Media._ID,
                 MediaStore.Images.Media.DISPLAY_NAME,
@@ -112,6 +92,7 @@ public class TestPhotoBackupService {
                 new String[]{},
                 null
         )) {
+            itemsFound = cursor.getCount();
             cursor.moveToFirst();
             assertThat("Media Query Returned No Results", cursor.getCount(), is(greaterThan(0)));
             assertThat("Column Count less than or equal to zero", cursor.getColumnCount(), is(greaterThan(0)));
@@ -128,29 +109,33 @@ public class TestPhotoBackupService {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             int read = is.read(bytes);
             while (read > 0) {
-//            if(useInvalidPhoto) {
-//                buffer.write(bytes);
-//            } else {
+
                 buffer.write(bytes, 0, read);
-//            }
                 read = is.read(bytes);
             }
             bytes = buffer.toByteArray();
             String fileHash = DigestUtils.sha512Hex(bytes);
-            assertThat("Input hash did not match preset hash for test image, this is likely a read error second verify", fileHash, is(testFileHash));
+            assertThat("Input hash did not match preset hash for test image, this is likely a read error second verify", fileHash.length(), is(greaterThan(10)));
         }
+        return itemsFound;
     }
 
-    public void addPhoto(Context targetContext, Context testContext, boolean useInvalidPhoto) throws IOException {
+    public String addPhoto(Context targetContext, Context testContext, boolean useInvalidPhoto) throws IOException {
+        String hash = addPhoto(targetContext, testContext, useInvalidPhoto, "human.jpg");
+        assertThat("Input hash did not match preset hash for test image, this is likely a read error", hash, is(testFileHash));
+        return hash;
+    }
+
+    public String addPhoto(Context targetContext, Context testContext, boolean useInvalidPhoto, String assetName) throws IOException {
         byte[] bytes = new byte[1024];
-        BufferedInputStream is = new BufferedInputStream(testContext.getResources().getAssets().open("human.jpg"));
+        BufferedInputStream is = new BufferedInputStream(testContext.getResources().getAssets().open(assetName));
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         int read = is.read(bytes);
         while (read > 0) {
 //            if(useInvalidPhoto) {
 //                buffer.write(bytes);
 //            } else {
-                buffer.write(bytes, 0, read);
+            buffer.write(bytes, 0, read);
 //            }
             read = is.read(bytes);
         }
@@ -159,11 +144,10 @@ public class TestPhotoBackupService {
 
         String hash = DigestUtils.sha512Hex(bytes);
 
-        assertThat("Input hash did not match preset hash for test image, this is likely a read error", hash, is(testFileHash));
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inMutable = true;
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Images.Media.DISPLAY_NAME, "image_screenshot_" + LocalDateTime.now().toString() + ".jpg");
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, assetName);
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
         values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES);
         Uri uri = targetContext.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
@@ -172,5 +156,17 @@ public class TestPhotoBackupService {
             imageOutStream.write(bytes);
             imageOutStream.flush();
         }
+        return hash;
+    }
+
+    public void deleteMediaStore(Context targetContext) {
+        final String[] projection = new String[]{
+                MediaStore.Images.Media._ID,
+                MediaStore.Images.Media.DISPLAY_NAME,
+                MediaStore.Images.Media.SIZE
+        };
+        Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+        int i = targetContext.getContentResolver().delete(uri, null);
+        assertThat("MediaStore didn't delete anything", i, is(greaterThan(0)));
     }
 }

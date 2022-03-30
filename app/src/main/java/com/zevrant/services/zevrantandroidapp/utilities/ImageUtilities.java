@@ -39,11 +39,11 @@ public class ImageUtilities {
         ));
     }
 
-    private int getDisplayHeightPixels(Resources r) {
+    public static int getDisplayHeightPixels(Resources r) {
         return r.getDisplayMetrics().heightPixels;
     }
 
-    private int getDisplayWidthPixels(Resources r) {
+    public static int getDisplayWidthPixels(Resources r) {
         return r.getDisplayMetrics().widthPixels;
     }
 }

@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.ListView;
 
 import androidx.annotation.NonNull;
@@ -16,7 +17,6 @@ import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.zevrant.services.zevrantandroidapp.R;
-import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
 import com.zevrant.services.zevrantandroidapp.adapters.ImageListAdapter;
 import com.zevrant.services.zevrantandroidapp.pojo.BackupFilePair;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
@@ -31,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +51,19 @@ public class MediaViewer extends Fragment {
     private int maxPages;
     private BackupService backupService;
     private JsonParser jsonParser;
-    String itemsPerPage = "6";
+    private String itemsPerPage = "12";
+    private int displayWidithPixels;
+    private int displayHeightPixels;
+    private boolean ready = false;
+
+
+    private synchronized boolean isReady(boolean update, boolean value) {
+        if (update) {
+            ready = value;
+        }
+        return ready;
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -66,14 +77,48 @@ public class MediaViewer extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         parentView = view;
+        final ListView listView = parentView.findViewById(R.id.imageList);
         scrollView = view.findViewById(R.id.mediaScrollView);
+        displayWidithPixels = convertDpToPx(Constants.MediaViewerControls.MAX_WIDTH_DP, getResources());
+        displayHeightPixels = convertDpToPx(Constants.MediaViewerControls.MAX_HIEGHT_DP, getResources());
+        Log.d(LOG_TAG, "Display height pixels = ".concat(String.valueOf(displayHeightPixels)));
+        Log.d(LOG_TAG, "Items per page".concat(itemsPerPage));
+        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+                Log.d(LOG_TAG, "MEDIA VIEW SCROLL FIRED");
+                Log.d(LOG_TAG, "Media View at Bottom? ".concat(String.valueOf(!view.canScrollList(1))));
+                Log.d(LOG_TAG, "All pages display? ".concat(String.valueOf(!(pagesDisplayed <= maxPages))));
+                Log.d(LOG_TAG, "Is Ready? = ".concat(String.valueOf(isReady(false, false))));
+                Log.d(LOG_TAG, "Viewable Item Count = ".concat(String.valueOf(visibleItemCount)));
+                ThreadManager.execute(() -> {
+                    try {
+                        Thread.sleep(1000);
+                        if (!view.canScrollList(1) && pagesDisplayed <= maxPages && visibleItemCount > 0 && isReady(false, false)) {
+
+                            getImagesByPage(view, pagesDisplayed, Integer.parseInt(itemsPerPage));
+                        }
+                    } catch(ExecutionException | InterruptedException | TimeoutException e){
+                        e.printStackTrace();
+                        ACRA.getErrorReporter().handleSilentException(e);
+                    }
+                });
+            }
+        });
         ThreadManager.execute(() -> {
             try {
 //                    String itemsPerPage = UserSettingsService.getPreference(Constants.UserPreference.DEFAULT_PAGE_COUNT);
-//                ((SwipeRefreshLayout) scrollView).setOnRefreshListener(this::refresh);
+                ((SwipeRefreshLayout) scrollView).setOnRefreshListener(this::refresh);
                 scrollView.setOnScrollChangeListener((View.OnScrollChangeListener) (view1, i, i1, i2, i3) -> {
+                    Log.d(LOG_TAG, "view bottom = ".concat(String.valueOf(view1.getHeight()).concat(" current height = ").concat(String.valueOf(view1.getHeight())).concat(" scroll Y = ").concat(String.valueOf(view1.getScrollY()))));
                     if (view1.getBottom() - (view1.getHeight() + view1.getScrollY()) == 0
-                            && pagesDisplayed < maxPages) {
+                            && pagesDisplayed <= maxPages) {
                         Log.d(LOG_TAG, "Hit bottom of scroller");
                         try {
                             getImagesByPage(view, pagesDisplayed, Integer.parseInt(itemsPerPage));
@@ -103,7 +148,7 @@ public class MediaViewer extends Fragment {
     }
 
     public void refresh() {
-        ThreadManager.execute( () -> {
+        ThreadManager.execute(() -> {
             assert scrollView != null;
             pagesDisplayed = 0;
             try {
@@ -117,34 +162,38 @@ public class MediaViewer extends Fragment {
     }
 
     private void getImagesByPage(View parentView, int page, int count) throws ExecutionException, InterruptedException, TimeoutException {
-        Log.d(LOG_TAG, "Getting images by page");
+        try {
+            Log.d(LOG_TAG, "Getting images by page");
+            isReady(true, false);
+            String response = backupService.getPhotoPage(
+                    page,
+                    count,
+                    displayWidithPixels,
+                    displayHeightPixels,
+                    getContext()
+            ).get(30, TimeUnit.SECONDS);
+            Log.d(LOG_TAG, "received response from image page request");
+            assert StringUtils.isNotBlank(response) : "Failed to retrieve image page, response was empty";
+            assert !Pattern.compile("FAILURE.*").matcher(response).matches() : "Failed to retrieve image page, response FAILURE";
+            Log.d(LOG_TAG, response);
 
-        String response = backupService.getPhotoPage(
-                page,
-                count,
-                convertDpToPx(Constants.MediaViewerControls.MAX_WIDTH_DP, getResources()),
-                convertDpToPx(Constants.MediaViewerControls.MAX_HIEGHT_DP, getResources()),
-                getContext()
-        ).get(30, TimeUnit.SECONDS);
-        Log.d(LOG_TAG, "received response from image page request");
-        assert StringUtils.isNotBlank(response) : "Failed to retrieve image page, response was empty";
-        assert !Pattern.compile("FAILURE.*").matcher(response).matches() : "Failed to retrieve image page, response FAILURE";
-        Log.d(LOG_TAG, response);
-
-        BackupFilesRetrieval backupPage = jsonParser.readValueFromString(response, BackupFilesRetrieval.class);
-        assert backupPage != null : "BackupFiles Retrieval was null despite non-empty response. It was ".concat(response) ;
-        assert backupPage.getBackupFiles() != null && backupPage.getBackupFiles().size() > 0 : "Retrieved no backup files despite backup service reporting backup files existing";
-        Log.d(LOG_TAG, "Images retireved!!");
-        maxPages = backupPage.getMaxPage();
-        addImagesToScreen(backupPage.getBackupFiles(), parentView);
-        pagesDisplayed++;
+            BackupFilesRetrieval backupPage = jsonParser.readValueFromString(response, BackupFilesRetrieval.class);
+            assert backupPage != null : "BackupFiles Retrieval was null despite non-empty response. It was ".concat(response);
+            assert backupPage.getBackupFiles() != null && backupPage.getBackupFiles().size() > 0 : "Retrieved no backup files despite backup service reporting backup files existing";
+            Log.d(LOG_TAG, "Images retireved!!");
+            maxPages = backupPage.getMaxPage();
+            addImagesToScreen(backupPage.getBackupFiles(), parentView);
+            pagesDisplayed++;
+        } finally {
+            isReady(true, true);
+        }
 
     }
 
     private void addImagesToScreen(List<BackupFile> backupFiles, View parentView) {
         final ListView listView = parentView.findViewById(R.id.imageList);
         Log.d(LOG_TAG, "Adding ".concat(String.valueOf(backupFiles.size()).concat(" images")));
-        if(listView.getAdapter() == null && backupFiles.isEmpty()) {
+        if (listView.getAdapter() == null && backupFiles.isEmpty()) {
             return; //TODO show error that no photos were found
         }
         if (listView.getAdapter() == null && !backupFiles.isEmpty()) {
@@ -161,13 +210,14 @@ public class MediaViewer extends Fragment {
 
         ImageListAdapter adapter = ((ImageListAdapter) listView.getAdapter());
         assert adapter != null : "Failed to get image adapter";
-        for (int i = 0; i < backupFiles.size(); i += 2) {
+        Log.d(LOG_TAG, "processing ".concat(String.valueOf(backupFiles.size()).concat(" files.")));
+        for (int i = 0; i < backupFiles.size() - 1; i += 2) {
             adapter.addImage(new BackupFilePair(backupFiles.get(i), backupFiles.get(i + 1)));
         }
         if (backupFiles.size() % 2 == 1) {
             adapter.addImage(new BackupFilePair(backupFiles.get(backupFiles.size() - 1), null));
         }
-        Log.d(LOG_TAG, "Adapter has " .concat(String.valueOf(adapter.getCount()).concat(" images")));
+        Log.d(LOG_TAG, "Adapter has ".concat(String.valueOf(adapter.getCount()).concat(" images")));
     }
 
     private void createFirstRow(ListView listView, BackupFile first, BackupFile second) {
@@ -176,7 +226,7 @@ public class MediaViewer extends Fragment {
             List<BackupFilePair> images = new ArrayList<>();
             BackupFilePair pair = new BackupFilePair(first, second);
             images.add(pair);
-            if(isAdded()) {
+            if (isAdded()) {
                 listView.setAdapter(new ImageListAdapter(images, getContext(), viewGroup, getChildFragmentManager(), backupService, getResources()));
             }
             future.complete(true);

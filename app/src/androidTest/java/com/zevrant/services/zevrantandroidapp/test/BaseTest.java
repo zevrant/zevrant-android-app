@@ -18,6 +18,7 @@ import androidx.test.espresso.Espresso;
 import androidx.test.espresso.action.ViewActions;
 import androidx.test.espresso.matcher.ViewMatchers;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.work.Configuration;
 import androidx.work.WorkManager;
 
@@ -75,6 +76,7 @@ public class BaseTest {
     public void setup(ActivityScenarioRule activityRule) throws Exception {
         SecretsInitializer.init();
         NukeSSLCerts.nuke();
+        InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("pm clear ".concat(this.getClass().getPackageName()));
         WorkManager.initialize(getTargetContext(), new Configuration.Builder().build());
         SharedPreferences sharedPreferences = getTargetContext().getSharedPreferences("zevrant-services-preferences", Context.MODE_PRIVATE);
         sharedPreferences.edit().clear().commit();

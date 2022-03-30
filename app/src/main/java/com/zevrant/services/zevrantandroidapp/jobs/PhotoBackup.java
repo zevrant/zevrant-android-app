@@ -188,7 +188,6 @@ public class PhotoBackup extends ListenableWorker {
                     Thread.sleep(3000);
                     sendBackUp(fileInfos.get(i), uri);
                 }
-                Thread.sleep( 3000);
             } catch (IOException | TimeoutException e) {
                 Log.e(LOG_TAG, "Failed to read img file skipping...");
                 ACRA.getErrorReporter().handleSilentException(e);

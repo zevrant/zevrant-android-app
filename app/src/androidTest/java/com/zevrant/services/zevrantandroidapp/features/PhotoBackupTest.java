@@ -3,23 +3,11 @@ package com.zevrant.services.zevrantandroidapp.features;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.IsNot.not;
 
-import android.content.ContentUris;
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.os.Environment;
-import android.provider.MediaStore;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
-import androidx.work.Configuration;
 import androidx.work.ListenableWorker;
-import androidx.work.WorkManager;
 import androidx.work.testing.TestListenableWorkerBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,7 +18,6 @@ import com.zevrant.services.zevrantandroidapp.exceptions.CredentialsNotFoundExce
 import com.zevrant.services.zevrantandroidapp.jobs.PhotoBackup;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.CleanupService;
-import com.zevrant.services.zevrantandroidapp.services.EncryptionService;
 import com.zevrant.services.zevrantandroidapp.services.HashingService;
 import com.zevrant.services.zevrantandroidapp.services.OAuthService;
 import com.zevrant.services.zevrantandroidapp.services.TestPhotoBackupService;
@@ -39,19 +26,13 @@ import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 import com.zevrant.services.zevrantuniversalcommon.services.ChecksumService;
 import com.zevrant.services.zevrantuniversalcommon.services.HexConversionService;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -111,13 +92,12 @@ public class PhotoBackupTest extends BaseTest {
         }
     }
 
-    //TODO: investigate why file has calculated on android is different than spring
     @Test
     public void photoBackupTest() throws InterruptedException, ExecutionException, TimeoutException, IOException, NoSuchAlgorithmException, CredentialsNotFoundException {
 
         Context context = getTargetContext();
         photoBackupService.addPhoto(getTargetContext(), getTestContext(), false);
-        photoBackupService.verifyPhotoAdded(getTargetContext(), checksumService);
+        photoBackupService.verifyPhotoAdded(getTargetContext());
         PhotoBackup photoBackup = TestListenableWorkerBuilder.from(context, PhotoBackup.class)
                 .build();
 
@@ -137,8 +117,8 @@ public class PhotoBackupTest extends BaseTest {
         List<String> hashes = objectMapper.readValue(responseString, new TypeReference<>() {
         });
 
-        assertThat("File hash was not found on server", hashes.size(), is(1));
-        assertThat("File hash ".concat(fileHash).concat(" was not found"), hashes.get(0), is(fileHash));
+        assertThat("File hash was not found on server", hashes.size(), is(greaterThan(0)));
+        assertThat("File hash ".concat(fileHash).concat(" was not found"), hashes.contains(fileHash), is(true));
     }
 
 

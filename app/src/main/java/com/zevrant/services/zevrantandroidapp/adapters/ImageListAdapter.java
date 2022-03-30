@@ -100,9 +100,6 @@ public class ImageListAdapter implements ListAdapter {
         BackupFilePair item = items.get(position);
         LayoutInflater layoutInflater = LayoutInflater.from(context);
         View inflatedView;
-        if(items.size() > 3) {
-            Log.d(LOG_TAG, "this isn't right...");
-        }
         if (convertView == null) {
             inflatedView = layoutInflater.inflate(R.layout.image_row, null);
         } else {
