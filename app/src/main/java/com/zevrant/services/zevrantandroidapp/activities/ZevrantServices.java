@@ -7,6 +7,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -67,7 +68,7 @@ public class ZevrantServices extends AppCompatActivity {
     private OAuthService oauthService;
     private JsonParser jsonParser;
     private static int currentFragment = R.id.mainView;
-
+    private static Resources.Theme theme;
 
     public static void setCurrentFragment(int fragmentId) {
         currentFragment = fragmentId;
@@ -75,6 +76,10 @@ public class ZevrantServices extends AppCompatActivity {
 
     public static int getCurrentFragment() {
         return currentFragment;
+    }
+
+    public static Resources.Theme getStaticTheme() {
+        return theme;
     }
 
     //    private static final
@@ -85,6 +90,7 @@ public class ZevrantServices extends AppCompatActivity {
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         fragmentManager.getFragments().forEach(transaction::remove);
         transaction.commit();
+        this.getTheme();
         this.getSystemService(AutofillManager.class)
                 .disableAutofillServices();
         setContentView(R.layout.activity_main);
@@ -153,7 +159,7 @@ public class ZevrantServices extends AppCompatActivity {
     }
 
     public static void navigate(Fragment previousFragment, Fragment fragment) {
-        currentFragment = fragment.getId();
+        currentFragment = R.id.mainView;
         fragmentManager.beginTransaction()
                 .remove(previousFragment)
                 .add(R.id.mainView, fragment)

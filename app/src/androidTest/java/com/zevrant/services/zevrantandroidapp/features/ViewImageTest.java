@@ -3,13 +3,16 @@ package com.zevrant.services.zevrantandroidapp.features;
 import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.click;
+import static androidx.test.espresso.action.ViewActions.swipeDown;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.fail;
 
 import androidx.test.espresso.action.ViewActions;
 import androidx.test.espresso.matcher.ViewMatchers;
@@ -29,6 +32,8 @@ import com.zevrant.services.zevrantandroidapp.test.BaseTest;
 import com.zevrant.services.zevrantandroidapp.utilities.TestConstants;
 import com.zevrant.services.zevrantuniversalcommon.services.ChecksumService;
 import com.zevrant.services.zevrantuniversalcommon.services.HexConversionService;
+
+import junit.framework.AssertionFailedError;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -77,6 +82,8 @@ public class ViewImageTest extends BaseTest {
         photoBackupService = new TestPhotoBackupService();
         photoBackupService.deleteBackups(getTargetContext(), getTestContext(), cleanupService,
                 credentialsService, jsonParser, backupService, fileHash);
+        photoBackupService.deleteMediaStore(getTargetContext());
+        cleanupService.eraseBackups(credentialsService.getAuthorization(), getTargetContext().getString(R.string.backup_base_url), getTargetContext()).get();
         photoBackupService.addPhoto(getTargetContext(), getTestContext(), false);
         photoBackupService.verifyPhotoAdded(getTargetContext());
         photoBackupService.backupFile(getTargetContext(), backupService, encryptionService,
@@ -88,7 +95,6 @@ public class ViewImageTest extends BaseTest {
 
     @Test
     public void displayImagesTest() throws Exception {
-
         Thread.sleep(4000);
         onData(is(not(nullValue())))
                 .inAdapterView(withId(R.id.imageList))
@@ -118,7 +124,7 @@ public class ViewImageTest extends BaseTest {
         photoBackupService.backupFile(getTargetContext(), backupService, encryptionService,
                 credentialsService, jsonParser, oAuthService);
         activityRule.getScenario().recreate();
-        Thread.sleep(16000);
+        Thread.sleep(4000);
         onData(is(not(nullValue())))
                 .inAdapterView(withId(R.id.imageList))
                 .atPosition(5)
@@ -129,5 +135,50 @@ public class ViewImageTest extends BaseTest {
                 .inAdapterView(withId(R.id.imageList))
                 .atPosition(6)
                 .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+    }
+
+    @Test
+    public void displayImagesLoadAdditionalWithRefresh() throws Exception {
+        photoBackupService.deleteMediaStore(getTargetContext());
+        cleanupService.eraseBackups(credentialsService.getAuthorization(), getTargetContext().getString(R.string.backup_base_url), getTargetContext()).get();
+        TestConstants.additionalTestImages.forEach(image -> {
+            try {
+                photoBackupService.addPhoto(getTargetContext(), getTestContext(), false, image);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertThat("Backups should be empty!", photoBackupService.hasHashes(backupService), is(false));
+        photoBackupService.backupFile(getTargetContext(), backupService, encryptionService,
+                credentialsService, jsonParser, oAuthService);
+        activityRule.getScenario().recreate();
+        Thread.sleep(4000);
+        onData(is(not(nullValue())))
+                .inAdapterView(withId(R.id.imageList))
+                .atPosition(5)
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)))
+                .perform(ViewActions.swipeUp());
+        Thread.sleep(4000);
+        onData(is(not(nullValue())))
+                .inAdapterView(withId(R.id.imageList))
+                .atPosition(5)
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onData(is(not(nullValue())))
+                .inAdapterView(withId(R.id.imageList))
+                .atPosition(6)
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)))
+                .perform(swipeDown())
+                .perform(swipeDown());
+        Thread.sleep(2000);
+        try {
+            onData(is(not(nullValue())))
+                    .inAdapterView(withId(R.id.imageList))
+                    .atPosition(6)
+                    .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.INVISIBLE)));
+        } catch (AssertionFailedError ex) {
+            assertThat("Expected image view to not exist, failed to validate assertion error", ex.getMessage(), containsString("'view has effective visibility <INVISIBLE>' doesn't match the selected view."));
+            return;
+        }
+        fail("Assertion should have failed, refresh should cause there to be only 5 rows");
     }
 }

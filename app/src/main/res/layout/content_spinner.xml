@@ -7,6 +7,8 @@
         android:id="@+id/progressBar"
         style="@android:style/Widget.DeviceDefault.Light.ProgressBar"
         android:layout_width="match_parent"
-        android:layout_height="736dp"
-        android:background="@color/black_overlay" />
+        android:layout_height="match_parent"
+        android:indeterminateTint="@color/purple_angular"
+        android:minHeight="150dp"
+        android:minWidth="150dp"/>
 </LinearLayout>

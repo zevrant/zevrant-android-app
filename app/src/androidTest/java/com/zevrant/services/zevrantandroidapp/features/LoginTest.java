@@ -88,7 +88,7 @@ public class LoginTest extends BaseTest {
         onView(withId(R.id.loginButton))
                 .perform(ViewActions.click());
         Thread.sleep(2000);
-        onView(withId(R.id.mediaScrollView))
+        onView(withId(R.id.imageList))
                 .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
         assertThat("Encryption Service did not have expected token", encryptionService.hasSecret(Constants.SecretNames.REFRESH_TOKEN_1), is(true));
         assertThat("Credentials Service did not have a valid token", credentialsService.getAuthorization(), is(not(nullValue())));

@@ -76,7 +76,6 @@ public class BaseTest {
     public void setup(ActivityScenarioRule activityRule) throws Exception {
         SecretsInitializer.init();
         NukeSSLCerts.nuke();
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().executeShellCommand("pm clear ".concat(this.getClass().getPackageName()));
         WorkManager.initialize(getTargetContext(), new Configuration.Builder().build());
         SharedPreferences sharedPreferences = getTargetContext().getSharedPreferences("zevrant-services-preferences", Context.MODE_PRIVATE);
         sharedPreferences.edit().clear().commit();

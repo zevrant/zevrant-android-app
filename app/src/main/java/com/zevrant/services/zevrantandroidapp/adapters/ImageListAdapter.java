@@ -12,10 +12,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ListAdapter;
 
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import com.zevrant.services.zevrantandroidapp.R;
 import com.zevrant.services.zevrantandroidapp.fragments.dialogs.ImageViewDialog;
+import com.zevrant.services.zevrantandroidapp.fragments.dialogs.ProcessingDialog;
 import com.zevrant.services.zevrantandroidapp.pojo.BackupFilePair;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
@@ -110,7 +112,11 @@ public class ImageListAdapter implements ListAdapter {
         imageView.setMaxHeight(Constants.MediaViewerControls.MAX_HIEGHT_DP);
         imageView.setOnClickListener(listener -> {
             ThreadManager.execute( () -> {
-                ImageViewDialog dialog = ImageViewDialog.newInstance(loadImage(item.getLeft().getFileHash()));
+                ProcessingDialog processingDialog = ProcessingDialog.newInstance();
+                processingDialog.show(fragmentManager, "Processing-Image");
+                byte[] imageBytes = loadImage(item.getLeft().getFileHash());
+                ImageViewDialog dialog = ImageViewDialog.newInstance(imageBytes);
+                processingDialog.dismiss();
                 dialog.show(fragmentManager, item.getLeft().getFileName());
             });
         });
@@ -123,7 +129,10 @@ public class ImageListAdapter implements ListAdapter {
             imageViewRight.setMaxHeight(Constants.MediaViewerControls.MAX_HIEGHT_DP);
             imageViewRight.setOnClickListener(listener -> {
                 ThreadManager.execute( () -> {
-                    ImageViewDialog dialog = ImageViewDialog.newInstance(loadImage(item.getRight().getFileHash()));
+                    ProcessingDialog processingDialog = ProcessingDialog.newInstance();
+                    processingDialog.show(fragmentManager, "Processing-Image");
+                    byte[] imageBytes = loadImage(item.getRight().getFileHash());
+                    ImageViewDialog dialog = ImageViewDialog.newInstance(imageBytes);
                     dialog.show(fragmentManager, item.getRight().getFileName());
                 });
             });

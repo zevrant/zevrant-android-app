@@ -17,11 +17,14 @@ import androidx.fragment.app.Fragment;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.zevrant.services.zevrantandroidapp.R;
+import com.zevrant.services.zevrantandroidapp.activities.ZevrantServices;
 import com.zevrant.services.zevrantandroidapp.adapters.ImageListAdapter;
+import com.zevrant.services.zevrantandroidapp.fragments.dialogs.ProcessingDialog;
 import com.zevrant.services.zevrantandroidapp.pojo.BackupFilePair;
 import com.zevrant.services.zevrantandroidapp.services.BackupService;
 import com.zevrant.services.zevrantandroidapp.services.JsonParser;
 import com.zevrant.services.zevrantandroidapp.utilities.Constants;
+import com.zevrant.services.zevrantandroidapp.utilities.ImageUtilities;
 import com.zevrant.services.zevrantandroidapp.utilities.ThreadManager;
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.response.BackupFile;
 import com.zevrant.services.zevrantuniversalcommon.rest.backup.response.BackupFilesRetrieval;
@@ -45,8 +48,9 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class MediaViewer extends Fragment {
 
     private int pagesDisplayed = 0;
-    private View scrollView;
+    private SwipeRefreshLayout scrollView;
     private View parentView;
+    private ListView listView;
     private ViewGroup viewGroup;
     private int maxPages;
     private BackupService backupService;
@@ -55,7 +59,7 @@ public class MediaViewer extends Fragment {
     private int displayWidithPixels;
     private int displayHeightPixels;
     private boolean ready = false;
-
+    private ProcessingDialog processingDialog = ProcessingDialog.newInstance();
 
     private synchronized boolean isReady(boolean update, boolean value) {
         if (update) {
@@ -77,8 +81,9 @@ public class MediaViewer extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         parentView = view;
-        final ListView listView = parentView.findViewById(R.id.imageList);
         scrollView = view.findViewById(R.id.mediaScrollView);
+        scrollView.setProgressBackgroundColorSchemeColor(getResources().getColor(R.color.purple_angular, ZevrantServices.getStaticTheme()));
+        listView = scrollView.findViewById(R.id.imageList);
         displayWidithPixels = convertDpToPx(Constants.MediaViewerControls.MAX_WIDTH_DP, getResources());
         displayHeightPixels = convertDpToPx(Constants.MediaViewerControls.MAX_HIEGHT_DP, getResources());
         Log.d(LOG_TAG, "Display height pixels = ".concat(String.valueOf(displayHeightPixels)));
@@ -104,30 +109,18 @@ public class MediaViewer extends Fragment {
 
                             getImagesByPage(view, pagesDisplayed, Integer.parseInt(itemsPerPage));
                         }
-                    } catch(ExecutionException | InterruptedException | TimeoutException e){
+                    } catch (ExecutionException | InterruptedException | TimeoutException e) {
                         e.printStackTrace();
                         ACRA.getErrorReporter().handleSilentException(e);
                     }
                 });
             }
         });
+
+        scrollView.setOnRefreshListener(this::refresh);
         ThreadManager.execute(() -> {
             try {
 //                    String itemsPerPage = UserSettingsService.getPreference(Constants.UserPreference.DEFAULT_PAGE_COUNT);
-                ((SwipeRefreshLayout) scrollView).setOnRefreshListener(this::refresh);
-                scrollView.setOnScrollChangeListener((View.OnScrollChangeListener) (view1, i, i1, i2, i3) -> {
-                    Log.d(LOG_TAG, "view bottom = ".concat(String.valueOf(view1.getHeight()).concat(" current height = ").concat(String.valueOf(view1.getHeight())).concat(" scroll Y = ").concat(String.valueOf(view1.getScrollY()))));
-                    if (view1.getBottom() - (view1.getHeight() + view1.getScrollY()) == 0
-                            && pagesDisplayed <= maxPages) {
-                        Log.d(LOG_TAG, "Hit bottom of scroller");
-                        try {
-                            getImagesByPage(view, pagesDisplayed, Integer.parseInt(itemsPerPage));
-                        } catch (ExecutionException | InterruptedException | TimeoutException e) {
-                            e.printStackTrace();
-                            ACRA.getErrorReporter().handleSilentException(e);
-                        }
-                    }
-                });
                 getImagesByPage(view, pagesDisplayed, Integer.parseInt(itemsPerPage));
             } catch (ExecutionException | InterruptedException | AssertionError | TimeoutException e) {
                 e.printStackTrace();
@@ -148,21 +141,35 @@ public class MediaViewer extends Fragment {
     }
 
     public void refresh() {
+
+        listView.setAdapter(null);
+        scrollView.setRefreshing(false);
+        showSpinner(true);
+        pagesDisplayed = 0;
+
         ThreadManager.execute(() -> {
-            assert scrollView != null;
-            pagesDisplayed = 0;
             try {
                 getImagesByPage(parentView, pagesDisplayed, Integer.parseInt(itemsPerPage));
             } catch (ExecutionException | InterruptedException | TimeoutException e) {
                 e.printStackTrace();
-                Log.e(LOG_TAG, e.getMessage());
                 ACRA.getErrorReporter().handleSilentException(e);
             }
         });
+
+    }
+
+    private synchronized void showSpinner(boolean shouldShow) {
+        if(shouldShow) {
+            processingDialog = ProcessingDialog.newInstance();
+            processingDialog.show(getChildFragmentManager(), "Progressing");
+        } else if(processingDialog.isVisible()){
+            processingDialog.dismiss();
+        }
     }
 
     private void getImagesByPage(View parentView, int page, int count) throws ExecutionException, InterruptedException, TimeoutException {
         try {
+            showSpinner(true);
             Log.d(LOG_TAG, "Getting images by page");
             isReady(true, false);
             String response = backupService.getPhotoPage(
@@ -182,19 +189,26 @@ public class MediaViewer extends Fragment {
             assert backupPage.getBackupFiles() != null && backupPage.getBackupFiles().size() > 0 : "Retrieved no backup files despite backup service reporting backup files existing";
             Log.d(LOG_TAG, "Images retireved!!");
             maxPages = backupPage.getMaxPage();
-            addImagesToScreen(backupPage.getBackupFiles(), parentView);
+            addImagesToScreen(backupPage.getBackupFiles(), parentView, pagesDisplayed);
             pagesDisplayed++;
         } finally {
             isReady(true, true);
+            showSpinner(false);
         }
 
     }
 
-    private void addImagesToScreen(List<BackupFile> backupFiles, View parentView) {
-        final ListView listView = parentView.findViewById(R.id.imageList);
+    private void addImagesToScreen(List<BackupFile> backupFiles, View parentView, int pagesDisplayed) {
         Log.d(LOG_TAG, "Adding ".concat(String.valueOf(backupFiles.size()).concat(" images")));
         if (listView.getAdapter() == null && backupFiles.isEmpty()) {
             return; //TODO show error that no photos were found
+        }
+        Log.d(LOG_TAG, "pages displayed = ".concat(String.valueOf(pagesDisplayed)));
+        if (listView.getAdapter() != null) {
+            Log.d(LOG_TAG, "items displayed = ".concat(String.valueOf(listView.getAdapter().getCount())));
+        }
+        if (listView.getAdapter() != null && listView.getAdapter().getCount() > 0 && pagesDisplayed == 0) {
+            listView.setAdapter(null);
         }
         if (listView.getAdapter() == null && !backupFiles.isEmpty()) {
             BackupFile first = backupFiles.get(0);
